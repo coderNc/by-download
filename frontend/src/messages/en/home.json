@@ -1,0 +1,69 @@
+{
+  "welcome": "Welcome to BY-DOWNLOADER",
+  "subtitle": "YouTube & Bilibili high-performance downloader",
+  "input_placeholder": "Paste video URLs here, one per line...",
+  "parse": "Start Parsing",
+  "parsing": "Parsing...",
+  "download_all": "Download All",
+  "download_now": "Download Now",
+  "queueing": "Queueing...",
+  "queued_feedback": "Queued",
+  "clear_queue": "Clear Queue",
+  "remove_item": "Remove Item",
+  "show_more": "Show More (+{count})",
+  "show_less": "Show Less",
+  "audio_only": "Audio Only",
+  "subtitles": "Subtitles",
+  "platforms": "YouTube · Bilibili · Playlist",
+  "items_count": "{count} items",
+  "empty_preview": "Paste links above to preview parsed videos.",
+  "unknown_channel": "Unknown",
+  "formats_count": "{count} formats",
+  "info_cards": {
+    "queue_stream": "Queue with progress stream",
+    "recent_completed": "Recent completed downloads",
+    "settings_hint": "Settings for path and format"
+  },
+  "toasts": {
+    "parse_partial": "Parsed {success} item(s), {failed} failed",
+    "parse_success": "Parsed {count} item(s)",
+    "download_created": "Download tasks created",
+    "paste_required": "Please paste at least one URL",
+    "nothing_parsed": "Nothing parsed yet",
+    "duplicates_found": "{count} duplicate item(s) already exist in history"
+  },
+  "quality_modal": {
+    "title": "Choose Video Quality",
+    "settings_default": "Settings Default",
+    "confirm": "Start Download",
+    "cancel": "Cancel",
+    "single": {
+      "subtitle": "Choose a download quality for \"{title}\"."
+    },
+    "batch": {
+      "subtitle": "Choose one quality strategy for these {count} parsed items.",
+      "default": {
+        "label": "Use settings default",
+        "description": "Prefer the current {format} format from settings, then fall back to the closest available format per video."
+      },
+      "highest": {
+        "label": "Highest available quality",
+        "description": "Pick the highest available video quality for each item."
+      },
+      "lowest": {
+        "label": "Lowest available quality",
+        "description": "Pick the lowest available video quality for each item."
+      }
+    }
+  },
+  "stats": {
+    "batch_parse": "Batch parse",
+    "queue_ready": "Queue ready",
+    "recent_history": "Recent history",
+    "local_control": "Local control",
+    "live": "Live",
+    "on": "On"
+  },
+  "parse_queue": "Parse Queue",
+  "recent_downloads": "Recent Downloads"
+}

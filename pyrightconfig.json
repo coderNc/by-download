@@ -1,0 +1,10 @@
+{
+  "typeCheckingMode": "basic",
+  "venvPath": ".",
+  "venv": ".venv",
+  "extraPaths": ["backend"],
+  "include": ["backend/app"],
+  "reportMissingModuleSource": false,
+  "reportImplicitRelativeImport": false,
+  "reportExplicitAny": false
+}

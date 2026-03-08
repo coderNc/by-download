@@ -1,0 +1,83 @@
+{
+  "title": "设置",
+  "subtitle": "管理默认格式、下载路径、并发数量、Cookies 与工具版本。",
+  "general": "常规",
+  "appearance": "外观",
+  "download": "下载",
+  "automation": "自动化",
+  "network": "网络",
+  "integration": "集成",
+  "tools": "工具状态",
+  "download_path": "下载路径",
+  "max_concurrent": "最大并行下载数",
+  "default_format": "默认格式",
+  "default_quality": "默认画质",
+  "rate_limit": "限速（KB/s）",
+  "proxy": "代理地址",
+  "auto_delete_days": "自动清理天数",
+  "cookie_platform": "Cookie 平台",
+  "cookie_content": "Cookie 内容",
+  "cookie_hint": "粘贴 Netscape 格式的 Cookie，可用于 Bilibili 或 YouTube 登录态下载。",
+  "cookie_status": "Cookie 状态",
+  "cookie_missing": "暂未导入 Cookie",
+  "cookie_available": "Cookie 文件已就绪",
+  "tool_status": "工具状态",
+  "active_downloads": "活动下载",
+  "queued_downloads": "排队下载",
+  "ffmpeg_ready": "FFmpeg 已就绪",
+  "ffmpeg_missing": "FFmpeg 未安装",
+  "save_success": "设置已保存",
+  "save_button": "保存设置",
+  "cookies_saved": "Cookie 导入成功",
+  "cookies_deleted": "Cookie 已删除",
+  "update_success": "yt-dlp 更新成功",
+  "refresh": "刷新",
+  "import_cookies": "导入 Cookie",
+  "delete_cookies": "删除 Cookie",
+  "update_ytdlp": "更新 yt-dlp",
+  "saving": "保存中...",
+  "updating": "更新中...",
+  "placeholders": {
+    "quality": "best",
+    "proxy": "http://127.0.0.1:7890",
+    "cookies": "# Netscape HTTP Cookie File"
+  },
+  "tools_label": {
+    "ytdlp": "yt-dlp",
+    "ffmpeg": "ffmpeg"
+  },
+  "platforms": {
+    "bilibili": "Bilibili",
+    "youtube": "YouTube"
+  },
+  "formats": {
+    "mp4": "MP4 视频",
+    "webm": "WEBM 视频",
+    "mp3": "MP3 音频"
+  },
+  "qualities": {
+    "best": {
+      "label": "最高可用画质",
+      "hint": "自动选择该视频最高可用的视频画质。"
+    },
+    "worst": {
+      "label": "最低可用画质",
+      "hint": "自动选择该视频最低可用的视频画质，省空间省流量。"
+    },
+    "bestaudio": {
+      "label": "仅最佳音频",
+      "hint": "只下载最佳音频流，不包含视频。"
+    }
+  },
+  "theme": {
+    "title": "主题",
+    "light": "浅色",
+    "dark": "深色",
+    "system": "跟随系统"
+  },
+  "locale": {
+    "title": "语言",
+    "zh-CN": "简体中文",
+    "en": "English"
+  }
+}

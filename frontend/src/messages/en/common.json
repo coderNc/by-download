@@ -1,0 +1,54 @@
+{
+  "title": "BY-DOWNLOADER",
+  "search": "Search",
+  "actions": {
+    "add": "Add",
+    "cancel": "Cancel",
+    "save": "Save",
+    "download": "Download",
+    "delete": "Delete",
+    "pause": "Pause",
+    "resume": "Resume",
+    "retry": "Retry"
+  },
+  "task_status": {
+    "queued": "Queued",
+    "downloading": "Downloading",
+    "processing": "Processing",
+    "merging": "Merging",
+    "completed": "Completed",
+    "failed": "Failed",
+    "paused": "Paused",
+    "cancelled": "Cancelled"
+  },
+  "platforms": {
+    "unknown": "Unknown",
+    "youtube": "YouTube",
+    "bilibili": "Bilibili"
+  },
+  "errors": {
+    "unknown": "Unknown error"
+  },
+  "notifications": {
+    "download_completed": "Download completed",
+    "download_completed_title": "BY-DOWNLOADER",
+    "download_completed_body": "A download has completed.",
+    "download_failed": "Download failed",
+    "stream_parse_failed": "Failed to parse task stream payload"
+  },
+  "metadata": {
+    "title": "BY-DOWNLOADER | YouTube & Bilibili Download Manager",
+    "description": "A high-performance local and self-hosted download manager for YouTube and Bilibili.",
+    "author": "BY-DOWNLOADER Team",
+    "manifest_description": "Local YouTube and Bilibili download manager powered by yt-dlp.",
+    "manifest_name": "BY-DOWNLOADER",
+    "manifest_short_name": "BY-DL",
+    "keywords": ["downloader", "youtube", "bilibili", "yt-dlp", "download manager"]
+  },
+  "nav": {
+    "home": "Home",
+    "downloads": "Downloads",
+    "history": "History",
+    "settings": "Settings"
+  }
+}

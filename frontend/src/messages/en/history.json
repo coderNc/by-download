@@ -1,0 +1,37 @@
+{
+  "title": "History",
+  "subtitle": "Review completed tasks, file sizes, and source platforms.",
+  "empty": "No history",
+  "clear_all": "Clear All",
+  "quality_fallback": "best",
+  "loading": "Loading history...",
+  "count": "{count} item(s)",
+  "count_filtered": "{filtered} / {total} item(s)",
+  "showing": "Showing {shown} / {total}",
+  "open_detail": "Open detail",
+  "no_match": "No items match current filters",
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {page} / {total}"
+  },
+  "not_available": "-",
+  "filters": {
+    "query_label": "Search",
+    "query_placeholder": "Search title, URL, or channel",
+    "platform_label": "Platform",
+    "status_label": "Status",
+    "all_platforms": "All platforms",
+    "all_statuses": "All statuses"
+  },
+  "labels": {
+    "duration": "Duration",
+    "file_size": "File Size",
+    "completed_at": "Completed",
+    "error": "Error",
+    "file_path": "Path"
+  },
+  "units": {
+    "mbps": "MB/s"
+  }
+}

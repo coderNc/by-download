@@ -1,0 +1,37 @@
+{
+  "title": "历史记录",
+  "subtitle": "浏览已完成任务、文件大小与来源平台。",
+  "empty": "暂无历史记录",
+  "clear_all": "清除全部",
+  "quality_fallback": "最佳",
+  "loading": "正在加载历史记录...",
+  "count": "共 {count} 条",
+  "count_filtered": "筛选后 {filtered} / {total} 条",
+  "showing": "当前显示 {shown} / 共 {total}",
+  "open_detail": "查看详情",
+  "no_match": "当前筛选条件下暂无结果",
+  "pagination": {
+    "previous": "上一页",
+    "next": "下一页",
+    "page": "第 {page} / {total} 页"
+  },
+  "not_available": "-",
+  "filters": {
+    "query_label": "搜索",
+    "query_placeholder": "按标题、链接或频道搜索",
+    "platform_label": "平台",
+    "status_label": "状态",
+    "all_platforms": "全部平台",
+    "all_statuses": "全部状态"
+  },
+  "labels": {
+    "duration": "时长",
+    "file_size": "文件大小",
+    "completed_at": "完成时间",
+    "error": "错误",
+    "file_path": "路径"
+  },
+  "units": {
+    "mbps": "MB/s"
+  }
+}

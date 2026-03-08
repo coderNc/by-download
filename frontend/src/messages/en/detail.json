@@ -1,0 +1,41 @@
+{
+  "title": "Task Detail",
+  "info": "Information",
+  "formats": "Available Formats",
+  "download": "Download Now",
+  "fallback_title": "Task detail",
+  "status": "Status",
+  "progress": "Progress",
+  "no_log": "No log yet.",
+  "loading": "Loading task details...",
+  "meta": {
+    "platform": "Platform",
+    "channel": "Channel",
+    "duration": "Duration",
+    "format": "Format",
+    "quality": "Quality",
+    "file_size": "File Size",
+    "file_path": "File Path",
+    "subtitle_path": "Subtitle",
+    "created_at": "Created",
+    "started_at": "Started",
+    "completed_at": "Completed",
+    "speed": "Speed",
+    "eta": "ETA"
+  },
+  "sections": {
+    "timeline": "Timeline",
+    "file": "File",
+    "logs": "Logs",
+    "error": "Error"
+  },
+  "labels": {
+    "unknown": "Unknown",
+    "not_available": "-",
+    "thumbnail": "Thumbnail"
+  },
+  "units": {
+    "seconds": "s",
+    "mbps": "MB/s"
+  }
+}

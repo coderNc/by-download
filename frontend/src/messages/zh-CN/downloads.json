@@ -1,0 +1,11 @@
+{
+  "title": "正在下载",
+  "subtitle": "实时查看排队、下载、暂停与失败任务。",
+  "empty": "暂无任务",
+  "status_line": "{platform} · {status}",
+  "unknown_speed": "-",
+  "speed_value": "{value} MB/s",
+  "speed": "速度",
+  "eta": "剩余时间",
+  "progress": "进度"
+}

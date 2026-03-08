@@ -1,0 +1,83 @@
+{
+  "title": "Settings",
+  "subtitle": "Manage default format, download path, concurrency, cookies, and tool versions.",
+  "general": "General",
+  "appearance": "Appearance",
+  "download": "Download",
+  "automation": "Automation",
+  "network": "Network",
+  "integration": "Integration",
+  "tools": "Tools",
+  "download_path": "Download Path",
+  "max_concurrent": "Max Concurrent Downloads",
+  "default_format": "Default Format",
+  "default_quality": "Default Quality",
+  "rate_limit": "Rate Limit (KB/s)",
+  "proxy": "Proxy URL",
+  "auto_delete_days": "Auto Delete After (Days)",
+  "cookie_platform": "Cookie Platform",
+  "cookie_content": "Cookie Content",
+  "cookie_hint": "Paste Netscape-format cookies for Bilibili or YouTube to unlock member-only or authenticated downloads.",
+  "cookie_status": "Cookie Status",
+  "cookie_missing": "No cookies imported yet",
+  "cookie_available": "Cookie file available",
+  "tool_status": "Tool Status",
+  "active_downloads": "Active Downloads",
+  "queued_downloads": "Queued Downloads",
+  "ffmpeg_ready": "FFmpeg Ready",
+  "ffmpeg_missing": "FFmpeg Missing",
+  "save_success": "Settings saved",
+  "save_button": "Save Settings",
+  "cookies_saved": "Cookies imported successfully",
+  "cookies_deleted": "Cookies removed",
+  "update_success": "yt-dlp updated successfully",
+  "refresh": "Refresh",
+  "import_cookies": "Import Cookies",
+  "delete_cookies": "Delete Cookies",
+  "update_ytdlp": "Update yt-dlp",
+  "saving": "Saving...",
+  "updating": "Updating...",
+  "placeholders": {
+    "quality": "best",
+    "proxy": "http://127.0.0.1:7890",
+    "cookies": "# Netscape HTTP Cookie File"
+  },
+  "tools_label": {
+    "ytdlp": "yt-dlp",
+    "ffmpeg": "ffmpeg"
+  },
+  "platforms": {
+    "bilibili": "Bilibili",
+    "youtube": "YouTube"
+  },
+  "formats": {
+    "mp4": "MP4 Video",
+    "webm": "WEBM Video",
+    "mp3": "MP3 Audio"
+  },
+  "qualities": {
+    "best": {
+      "label": "Best Available",
+      "hint": "Automatically picks the highest video quality available."
+    },
+    "worst": {
+      "label": "Lowest Available",
+      "hint": "Picks the lowest video quality to save space and bandwidth."
+    },
+    "bestaudio": {
+      "label": "Best Audio Only",
+      "hint": "Downloads the best audio stream only, no video."
+    }
+  },
+  "theme": {
+    "title": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "locale": {
+    "title": "Language",
+    "zh-CN": "简体中文",
+    "en": "English"
+  }
+}

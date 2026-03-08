@@ -1,0 +1,11 @@
+{
+  "title": "Downloads",
+  "subtitle": "Track queued, active, paused, and failed tasks in real time.",
+  "empty": "No tasks yet.",
+  "status_line": "{platform} · {status}",
+  "unknown_speed": "-",
+  "speed_value": "{value} MB/s",
+  "speed": "Speed",
+  "eta": "ETA",
+  "progress": "Progress"
+}

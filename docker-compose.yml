@@ -1,0 +1,31 @@
+services:
+  backend:
+    build: ./backend
+    container_name: by-downloader-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - downloads_data:/app/downloads
+      - ./backend/cookies:/app/cookies
+    environment:
+      - BY_DL_DOWNLOAD_DIR=/app/downloads
+      - BY_DL_DATABASE_URL=sqlite+aiosqlite:///./data/by_downloader.db
+      - BY_DL_MAX_CONCURRENT_DOWNLOADS=3
+      - BY_DL_LOG_LEVEL=INFO
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: by-downloader-web
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api
+      - NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws/progress
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  downloads_data:

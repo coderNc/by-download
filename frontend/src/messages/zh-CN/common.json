@@ -1,0 +1,54 @@
+{
+  "title": "BY-DOWNLOADER",
+  "search": "搜索",
+  "actions": {
+    "add": "添加",
+    "cancel": "取消",
+    "save": "保存",
+    "download": "下载",
+    "delete": "删除",
+    "pause": "暂停",
+    "resume": "继续",
+    "retry": "重试"
+  },
+  "task_status": {
+    "queued": "排队中",
+    "downloading": "下载中",
+    "processing": "处理中",
+    "merging": "合并中",
+    "completed": "已完成",
+    "failed": "失败",
+    "paused": "已暂停",
+    "cancelled": "已取消"
+  },
+  "platforms": {
+    "unknown": "未知",
+    "youtube": "YouTube",
+    "bilibili": "Bilibili"
+  },
+  "errors": {
+    "unknown": "未知错误"
+  },
+  "notifications": {
+    "download_completed": "下载完成",
+    "download_completed_title": "BY-DOWNLOADER",
+    "download_completed_body": "有一个下载任务已完成。",
+    "download_failed": "下载失败",
+    "stream_parse_failed": "任务流消息解析失败"
+  },
+  "metadata": {
+    "title": "BY-DOWNLOADER | YouTube 与 Bilibili 下载管理器",
+    "description": "一个高性能的本地 / 自托管 YouTube 与 Bilibili 下载管理器。",
+    "author": "BY-DOWNLOADER 团队",
+    "manifest_description": "由 yt-dlp 驱动的本地 YouTube 与 Bilibili 下载管理器。",
+    "manifest_name": "BY-DOWNLOADER",
+    "manifest_short_name": "BY-DL",
+    "keywords": ["下载器", "YouTube", "Bilibili", "yt-dlp", "下载管理"]
+  },
+  "nav": {
+    "home": "首页",
+    "downloads": "正在下载",
+    "history": "历史记录",
+    "settings": "设置"
+  }
+}

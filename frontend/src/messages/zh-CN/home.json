@@ -1,0 +1,69 @@
+{
+  "welcome": "欢迎使用 BY-DOWNLOADER",
+  "subtitle": "YouTube & Bilibili 高性能解析下载器",
+  "input_placeholder": "在此粘贴视频链接，每行一个...",
+  "parse": "开始解析",
+  "parsing": "解析中...",
+  "download_all": "全部下载",
+  "download_now": "立即下载",
+  "queueing": "加入中...",
+  "queued_feedback": "已加入队列",
+  "clear_queue": "清空队列",
+  "remove_item": "移除此项",
+  "show_more": "展开更多（+{count}）",
+  "show_less": "收起",
+  "audio_only": "仅音频",
+  "subtitles": "字幕",
+  "platforms": "YouTube · Bilibili · 播放列表",
+  "items_count": "{count} 条",
+  "empty_preview": "在上方粘贴链接后可预览解析结果。",
+  "unknown_channel": "未知",
+  "formats_count": "{count} 种格式",
+  "info_cards": {
+    "queue_stream": "队列与进度实时流",
+    "recent_completed": "最近完成下载",
+    "settings_hint": "下载路径与格式设置"
+  },
+  "toasts": {
+    "parse_partial": "已解析 {success} 条，失败 {failed} 条",
+    "parse_success": "已解析 {count} 条",
+    "download_created": "下载任务已创建",
+    "paste_required": "请至少粘贴一个链接",
+    "nothing_parsed": "还没有解析结果",
+    "duplicates_found": "历史中已有 {count} 条重复任务"
+  },
+  "quality_modal": {
+    "title": "选择视频画质",
+    "settings_default": "设置默认",
+    "confirm": "开始下载",
+    "cancel": "取消",
+    "single": {
+      "subtitle": "为《{title}》选择一个下载画质。"
+    },
+    "batch": {
+      "subtitle": "为这 {count} 条解析结果选择统一画质策略。",
+      "default": {
+        "label": "按设置默认",
+        "description": "优先使用当前设置里的 {format} 格式；没有时自动回退到该视频可用格式。"
+      },
+      "highest": {
+        "label": "最高可用画质",
+        "description": "为每条视频选择当前可用的最高画质。"
+      },
+      "lowest": {
+        "label": "最低可用画质",
+        "description": "为每条视频选择当前可用的最低画质。"
+      }
+    }
+  },
+  "stats": {
+    "batch_parse": "批量解析",
+    "queue_ready": "队列就绪",
+    "recent_history": "最近历史",
+    "local_control": "本地控制",
+    "live": "实时",
+    "on": "开启"
+  },
+  "parse_queue": "解析队列",
+  "recent_downloads": "最近下载"
+}

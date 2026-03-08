@@ -1,0 +1,41 @@
+{
+  "title": "任务详情",
+  "info": "基本信息",
+  "formats": "可用格式",
+  "download": "立即下载",
+  "fallback_title": "任务详情",
+  "status": "状态",
+  "progress": "进度",
+  "no_log": "暂无日志。",
+  "loading": "正在加载任务详情...",
+  "meta": {
+    "platform": "平台",
+    "channel": "频道",
+    "duration": "时长",
+    "format": "格式",
+    "quality": "画质",
+    "file_size": "文件大小",
+    "file_path": "文件路径",
+    "subtitle_path": "字幕文件",
+    "created_at": "创建时间",
+    "started_at": "开始时间",
+    "completed_at": "完成时间",
+    "speed": "速度",
+    "eta": "剩余时间"
+  },
+  "sections": {
+    "timeline": "时间线",
+    "file": "文件信息",
+    "logs": "日志",
+    "error": "错误信息"
+  },
+  "labels": {
+    "unknown": "未知",
+    "not_available": "-",
+    "thumbnail": "缩略图"
+  },
+  "units": {
+    "seconds": "秒",
+    "mbps": "MB/s"
+  }
+}
