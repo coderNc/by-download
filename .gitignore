@@ -37,6 +37,7 @@ logs/
 
 # Env & secrets
 .env*
+!.env.example
 *.pem
 
 # Data (runtime)
