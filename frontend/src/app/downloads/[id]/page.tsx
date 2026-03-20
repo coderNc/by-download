@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { AlertTriangle, Download } from "lucide-react";
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { fetchTask } from "@/lib/api";
 import { triggerBrowserDownload } from "@/lib/download";
 import { formatBytes, formatDateTime, formatDuration } from "@/lib/format";
+import { useTaskStore } from "@/stores/task-store";
 
 function statusClass(status?: string) {
   switch (status) {
@@ -32,18 +33,44 @@ function statusClass(status?: string) {
 
 export default function DownloadDetailPage() {
   const params = useParams<{ id: string }>();
+  const taskId = params.id;
   const t = useTranslations("detail");
   const commonT = useTranslations("common");
-  const detailQuery = useApi(fetchTask);
+  const upsertTask = useTaskStore((state) => state.upsertTask);
+  const liveTask = useTaskStore((state) => state.tasks.find((item) => item.id === taskId));
+  const detailQuery = useApi(fetchTask, {
+    onSuccess: (task) => upsertTask(task),
+  });
   const { execute } = detailQuery;
 
   useEffect(() => {
-    if (params.id) {
-      void execute(params.id);
+    if (taskId) {
+      void execute(taskId);
     }
-  }, [execute, params.id]);
+  }, [execute, taskId]);
 
-  const task = detailQuery.data;
+  const task = useMemo(() => {
+    if (!detailQuery.data) {
+      return liveTask ?? null;
+    }
+    if (!liveTask) {
+      return detailQuery.data;
+    }
+
+    return {
+      ...detailQuery.data,
+      status: liveTask.status,
+      progress: liveTask.progress,
+      speed: liveTask.speed ?? detailQuery.data.speed,
+      eta: liveTask.eta ?? detailQuery.data.eta,
+      error_message: liveTask.error_message ?? detailQuery.data.error_message,
+      file_path: liveTask.file_path ?? detailQuery.data.file_path,
+      subtitle_path: liveTask.subtitle_path ?? detailQuery.data.subtitle_path,
+      log_text: liveTask.log_text ?? detailQuery.data.log_text,
+      started_at: liveTask.started_at ?? detailQuery.data.started_at,
+      completed_at: liveTask.completed_at ?? detailQuery.data.completed_at,
+    };
+  }, [detailQuery.data, liveTask]);
   const platformLabels = {
     youtube: commonT("platforms.youtube"),
     bilibili: commonT("platforms.bilibili"),

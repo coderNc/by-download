@@ -48,13 +48,17 @@ export default function DownloadsPage() {
       return;
     }
 
-    setFocusedTaskId(focusTaskId);
-    element.scrollIntoView({ behavior: "smooth", block: "center" });
+    const frame = window.requestAnimationFrame(() => {
+      setFocusedTaskId(focusTaskId);
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
 
-    const nextParams = new URLSearchParams(searchParams.toString());
-    nextParams.delete("focus");
-    const nextQuery = nextParams.toString();
-    router.replace(nextQuery ? `/downloads?${nextQuery}` : "/downloads", { scroll: false });
+      const nextParams = new URLSearchParams(searchParams.toString());
+      nextParams.delete("focus");
+      const nextQuery = nextParams.toString();
+      router.replace(nextQuery ? `/downloads?${nextQuery}` : "/downloads", { scroll: false });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
   }, [focusTaskId, router, searchParams, tasks]);
 
   useEffect(() => {

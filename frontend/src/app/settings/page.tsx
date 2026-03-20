@@ -11,12 +11,29 @@ import { useApi } from "@/hooks/use-api";
 import { useLocale } from "@/hooks/use-locale";
 import { useThemeMode } from "@/hooks/use-theme-mode";
 import { type Locale, type ThemeMode } from "@/lib/constants";
+import { formatDateTime } from "@/lib/format";
 import { fetchHealth, fetchSettings, importCookies, removeCookies, saveSettings, updateYtdlp } from "@/lib/api";
-import type { SettingsPayload } from "@/lib/types";
+import type { CookiePlatformStatus, SettingsPayload } from "@/lib/types";
 import { useSettingsStore } from "@/stores/settings-store";
 
 const FORMAT_OPTIONS = ["mp4", "webm", "mp3"] as const;
 const COOKIE_PLATFORMS = ["bilibili", "youtube"] as const;
+
+function emptyCookieStatus(platform: string): CookiePlatformStatus {
+  return {
+    platform,
+    status: "missing",
+    issue_code: "missing",
+    cookie_count: 0,
+    matching_cookie_count: 0,
+    valid_cookie_count: 0,
+    expired_cookie_count: 0,
+    domains: [],
+    expires_at: null,
+    last_checked_at: null,
+    has_session_cookie: false,
+  };
+}
 
 export default function SettingsPage() {
   const t = useTranslations("settings");
@@ -109,7 +126,10 @@ export default function SettingsPage() {
       auto_delete_days: Math.max(0, Number(resolvedForm.auto_delete_days) || 0),
     };
 
-    await saveMutation.execute(payload);
+    const result = await saveMutation.execute(payload);
+    if (!result) {
+      return;
+    }
     setForm({});
     toast.success(t("save_success"));
     await refresh();
@@ -121,22 +141,79 @@ export default function SettingsPage() {
       return;
     }
 
-    await cookiesMutation.execute({ platform: cookiePlatform, cookie_content: cookieContent.trim() });
+    const result = await cookiesMutation.execute({ platform: cookiePlatform, cookie_content: cookieContent.trim() });
+    if (!result) {
+      return;
+    }
     setCookieContent("");
     await refresh();
   };
 
   const handleCookieDelete = async () => {
-    await deleteCookiesMutation.execute(cookiePlatform);
+    const result = await deleteCookiesMutation.execute(cookiePlatform);
+    if (!result) {
+      return;
+    }
     await refresh();
   };
 
   const handleYtdlpUpdate = async () => {
-    await ytdlpMutation.execute(undefined as never);
+    const result = await ytdlpMutation.execute(undefined as never);
+    if (!result) {
+      return;
+    }
     await refresh();
   };
 
   const loading = settingsQuery.loading || healthQuery.loading;
+  const cookieStatuses = useMemo(
+    () =>
+      COOKIE_PLATFORMS.map((platform) => ({
+        platform,
+        status: settings?.cookie_platforms?.[platform] ?? emptyCookieStatus(platform),
+      })),
+    [settings?.cookie_platforms],
+  );
+  const selectedCookieStatus = settings?.cookie_platforms?.[cookiePlatform] ?? emptyCookieStatus(cookiePlatform);
+  const selectedCookieExpiry = selectedCookieStatus.has_session_cookie && !selectedCookieStatus.expires_at
+    ? t("cookie_session")
+    : formatDateTime(selectedCookieStatus.expires_at) ?? t("cookie_not_available");
+  const selectedCookieLastChecked = formatDateTime(selectedCookieStatus.last_checked_at) ?? t("cookie_not_available");
+
+  const cookieStatusTone = useCallback((status: string) => {
+    if (status === "valid") {
+      return "border-emerald-400/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200";
+    }
+    if (status === "invalid") {
+      return "border-rose-400/40 bg-rose-500/10 text-rose-700 dark:text-rose-200";
+    }
+    return "border-slate-300/50 bg-slate-500/10 text-slate-700 dark:border-white/10 dark:text-slate-200";
+  }, []);
+
+  const cookieStatusLabel = useCallback(
+    (status: string) => t(`cookie_states.${status === "valid" || status === "invalid" || status === "missing" ? status : "invalid"}`),
+    [t],
+  );
+
+  const cookieIssueLabel = useCallback(
+    (issueCode?: string | null) => {
+      if (!issueCode) {
+        return t("cookie_issues.none");
+      }
+      const knownCodes = {
+        missing: true,
+        empty_file: true,
+        parse_error: true,
+        domain_mismatch: true,
+        expired: true,
+        unsupported_platform: true,
+        read_error: true,
+      } as const;
+
+      return t(`cookie_issues.${issueCode in knownCodes ? issueCode : "parse_error"}`);
+    },
+    [t],
+  );
 
   return (
     <div className="space-y-6">
@@ -264,20 +341,25 @@ export default function SettingsPage() {
               <ShieldCheck className="size-5 text-emerald-500" />
               <h2 className="text-xl font-bold text-slate-950 dark:text-white">{t("integration")}</h2>
             </div>
-            <label className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
-              <span className="font-medium">{t("cookie_platform")}</span>
-              <select
-                value={cookiePlatform}
-                onChange={(event) => setCookiePlatform(event.target.value as (typeof COOKIE_PLATFORMS)[number])}
-                className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm outline-none dark:border-white/10 dark:bg-white/6"
-              >
+            <div className="space-y-3">
+              <div className="text-sm font-medium text-slate-700 dark:text-slate-300">{t("cookie_platform")}</div>
+              <div className="grid gap-2 sm:grid-cols-2">
                 {COOKIE_PLATFORMS.map((item) => (
-                  <option key={item} value={item}>
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => setCookiePlatform(item)}
+                    className={`rounded-2xl border px-4 py-3 text-sm transition ${
+                      cookiePlatform === item
+                        ? "border-emerald-400 bg-emerald-500 text-white"
+                        : "border-slate-200 bg-white/80 text-slate-700 dark:border-white/10 dark:bg-white/6 dark:text-slate-200"
+                    }`}
+                  >
                     {t(`platforms.${item}`)}
-                  </option>
+                  </button>
                 ))}
-              </select>
-            </label>
+              </div>
+            </div>
             <label className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
               <span className="font-medium">{t("cookie_content")}</span>
               <textarea
@@ -288,15 +370,92 @@ export default function SettingsPage() {
               />
             </label>
             <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">{t("cookie_hint")}</p>
+            <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">{t("cookie_scope_hint")}</p>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              {cookieStatuses.map(({ platform, status }) => (
+                <button
+                  key={platform}
+                  type="button"
+                  onClick={() => setCookiePlatform(platform)}
+                  className={`space-y-3 rounded-2xl border px-4 py-4 text-left transition ${
+                    cookiePlatform === platform
+                      ? "border-emerald-400/60 bg-emerald-500/10"
+                      : "border-white/40 bg-white/60 dark:border-white/10 dark:bg-white/6"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="font-medium text-slate-950 dark:text-white">{t(`platforms.${platform}`)}</div>
+                    <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${cookieStatusTone(status.status)}`}>
+                      {cookieStatusLabel(status.status)}
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-600 dark:text-slate-300">
+                    {t("cookie_counts", {
+                      valid: status.valid_cookie_count,
+                      total: status.matching_cookie_count || status.cookie_count,
+                    })}
+                  </div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                    {status.status === "valid"
+                      ? status.has_session_cookie && !status.expires_at
+                        ? t("cookie_session")
+                        : `${t("cookie_expires_at")}: ${formatDateTime(status.expires_at) ?? t("cookie_not_available")}`
+                      : cookieIssueLabel(status.issue_code)}
+                  </div>
+                </button>
+              ))}
+            </div>
+
             <div className="rounded-2xl border border-white/40 bg-white/60 px-4 py-4 text-sm text-slate-700 dark:border-white/10 dark:bg-white/6 dark:text-slate-200">
-              <div className="font-medium text-slate-950 dark:text-white">{t("cookie_status")}</div>
-              <div className="mt-1">{settings?.cookie_status === "available" ? t("cookie_available") : t("cookie_missing")}</div>
+              <div className="font-medium text-slate-950 dark:text-white">
+                {t("cookie_status_for", { platform: t(`platforms.${cookiePlatform}`) })}
+              </div>
+              <div className="mt-3 grid gap-3 text-xs md:grid-cols-2">
+                <div>
+                  <div className="text-slate-500 dark:text-slate-400">{t("cookie_status")}</div>
+                  <div className="mt-1 font-medium text-slate-900 dark:text-slate-100">{cookieStatusLabel(selectedCookieStatus.status)}</div>
+                </div>
+                <div>
+                  <div className="text-slate-500 dark:text-slate-400">{t("cookie_matching_label")}</div>
+                  <div className="mt-1 font-medium text-slate-900 dark:text-slate-100">
+                    {selectedCookieStatus.valid_cookie_count} / {selectedCookieStatus.matching_cookie_count || selectedCookieStatus.cookie_count}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-slate-500 dark:text-slate-400">{t("cookie_expires_at")}</div>
+                  <div className="mt-1 font-medium text-slate-900 dark:text-slate-100">{selectedCookieExpiry}</div>
+                </div>
+                <div>
+                  <div className="text-slate-500 dark:text-slate-400">{t("cookie_last_checked")}</div>
+                  <div className="mt-1 font-medium text-slate-900 dark:text-slate-100">{selectedCookieLastChecked}</div>
+                </div>
+                <div className="md:col-span-2">
+                  <div className="text-slate-500 dark:text-slate-400">{t("cookie_domains")}</div>
+                  <div className="mt-1 break-words font-medium text-slate-900 dark:text-slate-100">
+                    {selectedCookieStatus.domains.length > 0 ? selectedCookieStatus.domains.join(", ") : t("cookie_not_available")}
+                  </div>
+                </div>
+                {selectedCookieStatus.issue_code && selectedCookieStatus.status !== "valid" ? (
+                  <div className="md:col-span-2">
+                    <div className="text-slate-500 dark:text-slate-400">{t("cookie_issue_label")}</div>
+                    <div className="mt-1 font-medium text-slate-900 dark:text-slate-100">
+                      {cookieIssueLabel(selectedCookieStatus.issue_code)}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
             </div>
             <div className="flex flex-wrap gap-3">
               <Button className="rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white" onClick={handleCookieImport} disabled={cookiesMutation.loading}>
                 {t("import_cookies")}
               </Button>
-              <Button variant="outline" className="rounded-full" onClick={handleCookieDelete} disabled={deleteCookiesMutation.loading}>
+              <Button
+                variant="outline"
+                className="rounded-full"
+                onClick={handleCookieDelete}
+                disabled={deleteCookiesMutation.loading || selectedCookieStatus.status === "missing"}
+              >
                 {t("delete_cookies")}
               </Button>
             </div>

@@ -1,16 +1,28 @@
 import asyncio
 import subprocess
+from dataclasses import asdict
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request
 from sqlalchemy import select
 
 from app.core.config import settings
+from app.core.cookie_manager import (
+    CookieValidationError,
+    SUPPORTED_COOKIE_PLATFORMS,
+    get_cookie_path,
+    inspect_cookie_content,
+    inspect_cookie_file,
+    serialize_cookie_records,
+)
+from app.core.history_cleanup import cleanup_completed_tasks
 from app.core.ytdlp_wrapper import ytdlp_wrapper
 from app.db.database import async_session
 from app.db.models import Setting, Task
 from app.schemas.settings import (
     CookieImportRequest,
+    CookieMutationResponse,
+    CookiePlatformStatus,
     HealthResponse,
     SettingsResponse,
     SettingsUpdateRequest,
@@ -55,14 +67,23 @@ async def _load_db_settings() -> dict[str, str]:
     return {item.key: item.value for item in pairs}
 
 
+def _build_cookie_platforms() -> dict[str, CookiePlatformStatus]:
+    return {
+        platform: CookiePlatformStatus.model_validate(asdict(inspect_cookie_file(platform)))
+        for platform in SUPPORTED_COOKIE_PLATFORMS
+    }
+
+
 @router.get("/settings", response_model=SettingsResponse)
 async def get_settings() -> SettingsResponse:
     db_values = await _load_db_settings()
     ffmpeg_installed, ffmpeg_version = await _get_ffmpeg_info()
-
-    cookie_dir = Path(settings.cookie_dir)
-    cookie_files = list(cookie_dir.glob("*_cookies.txt")) if cookie_dir.exists() else []
-    cookie_status = "available" if cookie_files else "missing"
+    cookie_platforms = _build_cookie_platforms()
+    valid_cookie_platforms = [item for item in cookie_platforms.values() if item.status == "valid"]
+    cookie_expires = None
+    if valid_cookie_platforms:
+        expires_candidates = [item.expires_at for item in valid_cookie_platforms if item.expires_at is not None]
+        cookie_expires = max(expires_candidates) if expires_candidates else None
 
     runtime_values = {
         "default_format": db_values.get("default_format", settings.default_format),
@@ -74,8 +95,9 @@ async def get_settings() -> SettingsResponse:
         "rate_limit": int(db_values.get("rate_limit", settings.rate_limit)),
         "proxy": db_values.get("proxy", settings.proxy),
         "auto_delete_days": int(db_values.get("auto_delete_days", settings.auto_delete_days)),
-        "cookie_status": cookie_status,
-        "cookie_expires": None,
+        "cookie_status": "available" if valid_cookie_platforms else "missing",
+        "cookie_expires": cookie_expires,
+        "cookie_platforms": cookie_platforms,
         "ytdlp_version": ytdlp_wrapper.get_version(),
         "ffmpeg_installed": ffmpeg_installed,
         "ffmpeg_version": ffmpeg_version,
@@ -109,31 +131,48 @@ async def update_settings(payload: SettingsUpdateRequest, request: Request) -> S
     manager = getattr(request.app.state, "download_manager", None)
     if manager is not None and "max_concurrent_downloads" in updates:
         await manager.set_max_concurrent(int(updates["max_concurrent_downloads"]))
+    if "auto_delete_days" in updates:
+        await cleanup_completed_tasks(days=int(updates["auto_delete_days"]))
 
     return await get_settings()
 
 
-@router.post("/settings/cookies")
-async def import_cookies(payload: CookieImportRequest) -> dict[str, str]:
-    platform = payload.platform.strip().lower()
-    if not platform:
-        raise HTTPException(status_code=400, detail="Invalid platform")
+@router.post("/settings/cookies", response_model=CookieMutationResponse)
+async def import_cookies(payload: CookieImportRequest) -> CookieMutationResponse:
+    try:
+        inspection, _, valid_records = inspect_cookie_content(payload.platform, payload.cookie_content)
+    except CookieValidationError as exc:
+        raise HTTPException(status_code=400, detail=exc.message) from exc
+
+    if inspection.status != "valid" or not valid_records:
+        raise HTTPException(status_code=400, detail="No valid cookies matched the selected platform")
 
     cookie_dir = Path(settings.cookie_dir)
     cookie_dir.mkdir(parents=True, exist_ok=True)
-    target = cookie_dir / f"{platform}_cookies.txt"
-    target.write_text(payload.cookie_content, encoding="utf-8")
+    target = get_cookie_path(payload.platform)
+    target.write_text(serialize_cookie_records(valid_records), encoding="utf-8")
 
-    return {"status": "ok", "path": str(target)}
+    platform_status = CookiePlatformStatus.model_validate(asdict(inspect_cookie_file(payload.platform)))
+    return CookieMutationResponse(
+        status="ok",
+        platform=payload.platform.strip().lower(),
+        path=str(target),
+        platform_status=platform_status,
+    )
 
 
-@router.delete("/settings/cookies/{platform}")
-async def delete_cookies(platform: str) -> dict[str, str]:
+@router.delete("/settings/cookies/{platform}", response_model=CookieMutationResponse)
+async def delete_cookies(platform: str) -> CookieMutationResponse:
     normalized = platform.strip().lower()
-    target = Path(settings.cookie_dir) / f"{normalized}_cookies.txt"
+    if normalized not in SUPPORTED_COOKIE_PLATFORMS:
+        raise HTTPException(status_code=400, detail=f"Unsupported cookie platform: {platform}")
+
+    target = get_cookie_path(normalized)
     if target.exists():
         target.unlink()
-    return {"status": "ok", "platform": normalized}
+
+    platform_status = CookiePlatformStatus.model_validate(asdict(inspect_cookie_file(normalized)))
+    return CookieMutationResponse(status="ok", platform=normalized, platform_status=platform_status)
 
 
 @router.get("/health", response_model=HealthResponse)

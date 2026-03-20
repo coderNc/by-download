@@ -1,10 +1,9 @@
 from datetime import datetime, timedelta
-from pathlib import Path
-import shutil
 
 from fastapi import APIRouter, Query
 from sqlalchemy import and_, func, or_, select
 
+from app.core.history_cleanup import cleanup_completed_tasks
 from app.db.database import async_session
 from app.db.models import Task
 from app.schemas.task import TaskListResponse, TaskResponse
@@ -121,26 +120,5 @@ async def search_history(
 
 @router.delete("/history/clear")
 async def clear_history(days: int = Query(default=30, ge=1)) -> dict[str, int]:
-    cutoff = datetime.utcnow() - timedelta(days=days)
-    async with async_session() as session:
-        rows = await session.execute(
-            select(Task).where(and_(Task.status == "completed", Task.completed_at < cutoff))
-        )
-        stale_tasks = rows.scalars().all()
-        removed = 0
-        for task in stale_tasks:
-            if task.file_path and Path(task.file_path).exists():
-                Path(task.file_path).unlink(missing_ok=True)
-            if task.subtitle_path and Path(task.subtitle_path).exists():
-                Path(task.subtitle_path).unlink(missing_ok=True)
-            if task.id:
-                task_dir = Path(task.file_path).parent if task.file_path else None
-                if task_dir and task_dir.exists() and task_dir.is_dir():
-                    shutil.rmtree(task_dir, ignore_errors=True)
-            await session.delete(task)
-            removed += 1
-        await session.commit()
-
-    if removed == 0:
-        return {"removed": 0}
+    removed = await cleanup_completed_tasks(days=days)
     return {"removed": removed}

@@ -103,12 +103,16 @@ export default function Home() {
   );
 
   useEffect(() => {
-    setShowAllParsedVideos(false);
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-    setActiveSingleDownloadIndex(null);
-    setQueuedFeedbackIndex(null);
-    setQualityDialogState(null);
+    const frame = window.requestAnimationFrame(() => {
+      setShowAllParsedVideos(false);
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      setActiveSingleDownloadIndex(null);
+      setQueuedFeedbackIndex(null);
+      setQualityDialogState(null);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
   }, [parsedVideos]);
 
   const getVideoFormats = useCallback((video: ParsedVideo) => video.formats.filter((item) => !item.is_audio_only), []);

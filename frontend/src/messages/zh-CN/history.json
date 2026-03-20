@@ -10,6 +10,27 @@
   "showing": "当前显示 {shown} / 共 {total}",
   "open_detail": "查看详情",
   "no_match": "当前筛选条件下暂无结果",
+  "stats": {
+    "total_downloads": "已完成下载",
+    "total_size": "累计体积",
+    "recent_downloads": "近 7 天新增",
+    "platform_count": "活跃平台数"
+  },
+  "breakdown": {
+    "title": "平台分布",
+    "subtitle": "按已完成下载统计来源平台。",
+    "empty": "暂无平台统计。"
+  },
+  "clear": {
+    "title": "清理历史",
+    "subtitle": "删除指定天数以前的已完成任务及其文件。",
+    "input_label": "清理多少天以前",
+    "hint": "只会删除已完成任务；设置为 1 表示清理 1 天前的历史。",
+    "action": "立即清理",
+    "running": "正在清理...",
+    "success": "已清理 {count} 条历史记录",
+    "empty": "没有可清理的历史记录"
+  },
   "pagination": {
     "previous": "上一页",
     "next": "下一页",

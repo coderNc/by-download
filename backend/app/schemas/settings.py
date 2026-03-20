@@ -1,6 +1,21 @@
+from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+
+class CookiePlatformStatus(BaseModel):
+    platform: str
+    status: str = "missing"
+    issue_code: Optional[str] = None
+    cookie_count: int = 0
+    matching_cookie_count: int = 0
+    valid_cookie_count: int = 0
+    expired_cookie_count: int = 0
+    domains: list[str] = Field(default_factory=list)
+    expires_at: Optional[datetime] = None
+    last_checked_at: Optional[datetime] = None
+    has_session_cookie: bool = False
 
 
 class SettingsResponse(BaseModel):
@@ -12,7 +27,8 @@ class SettingsResponse(BaseModel):
     proxy: str = ""
     auto_delete_days: int = 7
     cookie_status: Optional[str] = None
-    cookie_expires: Optional[str] = None
+    cookie_expires: Optional[datetime] = None
+    cookie_platforms: dict[str, CookiePlatformStatus] = Field(default_factory=dict)
     ytdlp_version: str = ""
     ffmpeg_installed: bool = False
     ffmpeg_version: str = ""
@@ -31,6 +47,13 @@ class SettingsUpdateRequest(BaseModel):
 class CookieImportRequest(BaseModel):
     cookie_content: str
     platform: str = "bilibili"
+
+
+class CookieMutationResponse(BaseModel):
+    status: str
+    platform: str
+    path: Optional[str] = None
+    platform_status: CookiePlatformStatus
 
 
 class HealthResponse(BaseModel):

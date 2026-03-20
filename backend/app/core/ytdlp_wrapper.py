@@ -3,6 +3,7 @@ import math
 import re
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
@@ -19,9 +20,31 @@ from app.schemas.task import ParsedVideo, VideoFormat
 ProgressHook = Callable[[dict[str, Any]], None]
 
 
+@dataclass(slots=True)
+class DownloadResult:
+    output_path: str
+    subtitle_path: str | None = None
+
+
 class YtdlpWrapper:
     _YOUTUBE_PATTERN = re.compile(r"(?:youtube\.com|youtu\.be)", re.IGNORECASE)
     _BILIBILI_PATTERN = re.compile(r"(?:bilibili\.com|b23\.tv)", re.IGNORECASE)
+    _SUBTITLE_EXTENSIONS = {
+        ".ass",
+        ".dfxp",
+        ".json",
+        ".lrc",
+        ".sbv",
+        ".smi",
+        ".srt",
+        ".srv1",
+        ".srv2",
+        ".srv3",
+        ".ssa",
+        ".ttml",
+        ".txt",
+        ".vtt",
+    }
 
     @classmethod
     def detect_platform(cls, url: str) -> str:
@@ -126,6 +149,48 @@ class YtdlpWrapper:
         return subtitle_map
 
     @classmethod
+    def _find_subtitle_path(cls, output_path: str, subtitle_langs: list[str] | None = None) -> str | None:
+        media_path = Path(output_path)
+        parent = media_path.parent
+        if not parent.exists():
+            return None
+
+        media_name = media_path.name.lower()
+        base_stem = media_path.stem.lower()
+        preferred_langs = [
+            item.strip().lower()
+            for item in (subtitle_langs or [])
+            if item and item.strip() and item.strip().lower() != "all"
+        ]
+
+        matches: list[tuple[int, str, Path]] = []
+        for candidate in parent.iterdir():
+            if not candidate.is_file():
+                continue
+            if candidate.name.lower() == media_name:
+                continue
+            if candidate.suffix.lower() not in cls._SUBTITLE_EXTENSIONS:
+                continue
+
+            candidate_name = candidate.name.lower()
+            if not (candidate.stem.lower() == base_stem or candidate_name.startswith(f"{base_stem}.")):
+                continue
+
+            lang_rank = len(preferred_langs)
+            for index, lang in enumerate(preferred_langs):
+                if f".{lang}." in candidate_name or candidate_name.endswith(f".{lang}{candidate.suffix.lower()}"):
+                    lang_rank = index
+                    break
+
+            matches.append((lang_rank, candidate.name.lower(), candidate))
+
+        if not matches:
+            return None
+
+        matches.sort(key=lambda item: (item[0], item[1]))
+        return str(matches[0][2])
+
+    @classmethod
     def _extract_video_formats(cls, info: dict[str, Any]) -> list[VideoFormat]:
         formats: list[VideoFormat] = []
         seen_format_ids: set[str] = set()
@@ -186,6 +251,9 @@ class YtdlpWrapper:
             "skip_download": True,
             "noplaylist": False,
         }
+        cookie_paths = self._cookie_candidates(platform)
+        if cookie_paths:
+            opts["cookiefile"] = str(cookie_paths[0])
 
         def _extract() -> Any:
             with yt_dlp.YoutubeDL(opts) as ydl:
@@ -233,7 +301,7 @@ class YtdlpWrapper:
         platform: str | None = None,
         runtime_settings: dict[str, str] | None = None,
         progress_callback: ProgressHook | None = None,
-    ) -> str:
+    ) -> DownloadResult:
         subtitle_langs = subtitle_langs or []
         detected_platform = platform or self.detect_platform(url)
         if runtime_settings is None:
@@ -289,21 +357,26 @@ class YtdlpWrapper:
         if cookie_paths:
             opts["cookiefile"] = str(cookie_paths[0])
 
-        def _download() -> str:
+        def _download() -> DownloadResult:
             with yt_dlp.YoutubeDL(opts) as ydl:
                 info = ydl.extract_info(url, download=True)
                 if info is None:
                     raise RuntimeError("yt-dlp returned no download information")
                 requested = info.get("requested_downloads") or []
+                output_path: str
                 if requested and requested[0].get("filepath"):
-                    return str(requested[0]["filepath"])
-                prepared_name = ydl.prepare_filename(info)
-                if extract_audio:
-                    target_ext = audio_format or "mp3"
-                    candidate = str(Path(prepared_name).with_suffix(f".{target_ext}"))
-                    if Path(candidate).exists():
-                        return candidate
-                return prepared_name
+                    output_path = str(requested[0]["filepath"])
+                else:
+                    prepared_name = ydl.prepare_filename(info)
+                    output_path = prepared_name
+                    if extract_audio:
+                        target_ext = audio_format or "mp3"
+                        candidate = str(Path(prepared_name).with_suffix(f".{target_ext}"))
+                        if Path(candidate).exists():
+                            output_path = candidate
+
+                subtitle_path = self._find_subtitle_path(output_path, subtitle_langs) if download_subtitles else None
+                return DownloadResult(output_path=output_path, subtitle_path=subtitle_path)
 
         return await asyncio.to_thread(_download)
 

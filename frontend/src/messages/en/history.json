@@ -10,6 +10,27 @@
   "showing": "Showing {shown} / {total}",
   "open_detail": "Open detail",
   "no_match": "No items match current filters",
+  "stats": {
+    "total_downloads": "Completed Downloads",
+    "total_size": "Total Size",
+    "recent_downloads": "Last 7 Days",
+    "platform_count": "Platforms"
+  },
+  "breakdown": {
+    "title": "Platform Breakdown",
+    "subtitle": "Completed downloads grouped by source platform.",
+    "empty": "No platform data yet."
+  },
+  "clear": {
+    "title": "Clear History",
+    "subtitle": "Remove completed tasks and files older than the selected age.",
+    "input_label": "Clear items older than",
+    "hint": "Only completed tasks are removed. A value of 1 clears history older than one day.",
+    "action": "Run Cleanup",
+    "running": "Cleaning...",
+    "success": "Removed {count} history item(s)",
+    "empty": "No matching history to clear"
+  },
   "pagination": {
     "previous": "Previous",
     "next": "Next",

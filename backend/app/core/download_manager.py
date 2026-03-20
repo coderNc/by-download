@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 
 from app.api.websocket import connection_manager
 from app.core.ytdlp_wrapper import ytdlp_wrapper
+from app.core.history_cleanup import cleanup_completed_tasks
 from app.db.database import async_session
 from app.db.models import Setting, Task
 from app.schemas.task import DownloadRequest
@@ -59,6 +60,7 @@ class DownloadManager:
             await session.commit()
         for task_id in queued_ids:
             await self.queue.put(task_id)
+        await cleanup_completed_tasks()
         await self._broadcast_queue_update()
 
     async def set_max_concurrent(self, max_concurrent: int) -> None:
@@ -98,7 +100,18 @@ class DownloadManager:
             session.add(task)
             await session.commit()
         await self.queue.put(task_id)
-        await connection_manager.broadcast({"type": "status_change", "task_id": task_id, "status": "queued"})
+        await connection_manager.broadcast(
+            {
+                "type": "status_change",
+                "task_id": task_id,
+                "status": "queued",
+                "title": download_request.title,
+                "url": str(download_request.url),
+                "platform": ytdlp_wrapper.detect_platform(download_request.url),
+                "log_text": task.log_text,
+                "created_at": now.isoformat(),
+            }
+        )
         await self._broadcast_queue_update()
 
     async def cancel_task(self, task_id: str) -> None:
@@ -118,7 +131,15 @@ class DownloadManager:
             task.eta = None
             self._append_log(task, "Task cancelled")
             await session.commit()
-        await connection_manager.broadcast({"type": "status_change", "task_id": task_id, "status": "cancelled"})
+        await connection_manager.broadcast(
+            {
+                "type": "status_change",
+                "task_id": task_id,
+                "status": "cancelled",
+                "error_message": "Cancelled by user",
+                "log_text": task.log_text if task else None,
+            }
+        )
         await self._broadcast_queue_update()
 
     async def pause_task(self, task_id: str) -> None:
@@ -136,7 +157,14 @@ class DownloadManager:
             task.eta = None
             self._append_log(task, "Task paused")
             await session.commit()
-        await connection_manager.broadcast({"type": "status_change", "task_id": task_id, "status": "paused"})
+        await connection_manager.broadcast(
+            {
+                "type": "status_change",
+                "task_id": task_id,
+                "status": "paused",
+                "log_text": task.log_text if task else None,
+            }
+        )
         await self._broadcast_queue_update()
 
     async def resume_task(self, task_id: str) -> None:
@@ -151,7 +179,14 @@ class DownloadManager:
             self._append_log(task, "Task resumed")
             await session.commit()
         await self.queue.put(task_id)
-        await connection_manager.broadcast({"type": "status_change", "task_id": task_id, "status": "queued"})
+        await connection_manager.broadcast(
+            {
+                "type": "status_change",
+                "task_id": task_id,
+                "status": "queued",
+                "log_text": task.log_text if task else None,
+            }
+        )
         await self._broadcast_queue_update()
 
     async def retry_task(self, task_id: str) -> None:
@@ -171,7 +206,14 @@ class DownloadManager:
             self._append_log(task, "Task re-queued for retry")
             await session.commit()
         await self.queue.put(task_id)
-        await connection_manager.broadcast({"type": "status_change", "task_id": task_id, "status": "queued"})
+        await connection_manager.broadcast(
+            {
+                "type": "status_change",
+                "task_id": task_id,
+                "status": "queued",
+                "log_text": task.log_text if task else None,
+            }
+        )
         await self._broadcast_queue_update()
 
     async def _queue_loop(self) -> None:
@@ -242,7 +284,15 @@ class DownloadManager:
                 self._append_log(task_record, "Download started")
                 await session.commit()
 
-            await connection_manager.broadcast({"type": "status_change", "task_id": task_id, "status": "downloading"})
+            await connection_manager.broadcast(
+                {
+                    "type": "status_change",
+                    "task_id": task_id,
+                    "status": "downloading",
+                    "started_at": task_record.started_at.isoformat() if task_record and task_record.started_at else None,
+                    "log_text": task_record.log_text if task_record else None,
+                }
+            )
             await self._broadcast_queue_update()
 
             if self._loop is None:
@@ -258,7 +308,7 @@ class DownloadManager:
                 asyncio.run_coroutine_threadsafe(self._progress_callback(task_id, data), self._loop)
 
             try:
-                output_path = await ytdlp_wrapper.download(
+                download_result = await ytdlp_wrapper.download(
                     task_id=task_id,
                     url=request_data.url,
                     format_id=request_data.format_id,
@@ -271,6 +321,7 @@ class DownloadManager:
                     runtime_settings=runtime_settings,
                     progress_callback=_sync_progress_hook,
                 )
+                output_path = download_result.output_path
                 file_size = os.path.getsize(output_path) if os.path.exists(output_path) else None
                 completed_at = datetime.utcnow()
 
@@ -279,6 +330,7 @@ class DownloadManager:
                     task_record = result.scalar_one_or_none()
                     if task_record:
                         task_record.file_path = output_path
+                        task_record.subtitle_path = download_result.subtitle_path
                         task_record.file_size = file_size
                         task_record.status = "completed"
                         task_record.progress = 100.0
@@ -294,9 +346,13 @@ class DownloadManager:
                         "task_id": task_id,
                         "status": "completed",
                         "file_path": output_path,
+                        "subtitle_path": download_result.subtitle_path,
                         "completed_at": completed_at.isoformat(),
+                        "progress": 100.0,
+                        "log_text": task_record.log_text if task_record else None,
                     }
                 )
+                await cleanup_completed_tasks()
             except asyncio.CancelledError:
                 async with async_session() as session:
                     result = await session.execute(select(Task).where(Task.id == task_id))
@@ -310,6 +366,15 @@ class DownloadManager:
                         task_record.completed_at = datetime.utcnow()
                         self._append_log(task_record, "Download cancelled")
                         await session.commit()
+                await connection_manager.broadcast(
+                    {
+                        "type": "status_change",
+                        "task_id": task_id,
+                        "status": "cancelled",
+                        "error_message": "Cancelled by user",
+                        "log_text": task_record.log_text if task_record else None,
+                    }
+                )
                 raise
             except Exception as exc:
                 async with async_session() as session:
@@ -329,6 +394,7 @@ class DownloadManager:
                         "task_id": task_id,
                         "status": "failed",
                         "error_message": str(exc),
+                        "log_text": task_record.log_text if task_record else None,
                     }
                 )
             finally:

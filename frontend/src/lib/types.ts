@@ -79,6 +79,27 @@ export interface TaskListResponse {
   total: number;
 }
 
+export interface HistoryStatsPayload {
+  total_downloads: number;
+  total_size: number;
+  platform_breakdown: Record<string, number>;
+  recent_count: number;
+}
+
+export interface CookiePlatformStatus {
+  platform: string;
+  status: string;
+  issue_code?: string | null;
+  cookie_count: number;
+  matching_cookie_count: number;
+  valid_cookie_count: number;
+  expired_cookie_count: number;
+  domains: string[];
+  expires_at?: string | null;
+  last_checked_at?: string | null;
+  has_session_cookie: boolean;
+}
+
 export interface HistoryQueryParams {
   page?: number;
   limit?: number;
@@ -97,6 +118,7 @@ export interface SettingsPayload {
   auto_delete_days: number;
   cookie_status?: string | null;
   cookie_expires?: string | null;
+  cookie_platforms: Record<string, CookiePlatformStatus>;
   ytdlp_version: string;
   ffmpeg_installed: boolean;
   ffmpeg_version: string;
@@ -118,8 +140,13 @@ export interface CookieImportPayload {
 
 export interface CookieMutationResponse {
   status: string;
-  path?: string;
-  platform?: string;
+  path?: string | null;
+  platform: string;
+  platform_status: CookiePlatformStatus;
+}
+
+export interface HistoryClearPayload {
+  removed: number;
 }
 
 export interface YtdlpUpdatePayload {

@@ -1,4 +1,4 @@
-import ky from "ky";
+import ky, { HTTPError } from "ky";
 
 import { API_BASE_URL } from "@/lib/constants";
 import type {
@@ -6,7 +6,9 @@ import type {
   CookieMutationResponse,
   CreateDownloadPayload,
   HealthPayload,
+  HistoryClearPayload,
   HistoryQueryParams,
+  HistoryStatsPayload,
   ParsedVideo,
   SettingsPayload,
   TaskItem,
@@ -18,6 +20,20 @@ export const api = ky.create({
   prefixUrl: API_BASE_URL,
   timeout: 60000,
 });
+
+async function withApiDetail<T>(request: Promise<T>) {
+  try {
+    return await request;
+  } catch (error) {
+    if (error instanceof HTTPError) {
+      const payload = await error.response.json<{ detail?: string }>().catch(() => null);
+      if (payload?.detail) {
+        throw new Error(payload.detail);
+      }
+    }
+    throw error;
+  }
+}
 
 export async function parseUrls(urls: string[]) {
   return api.post("parse", { json: { urls } }).json<{ videos: ParsedVideo[]; errors: Array<Record<string, string>> }>();
@@ -69,6 +85,14 @@ export async function fetchHistory(params?: HistoryQueryParams) {
   return api.get("history", { searchParams }).json<TaskListResponse>();
 }
 
+export async function fetchHistoryStats() {
+  return api.get("history/stats").json<HistoryStatsPayload>();
+}
+
+export async function clearHistory(days: number) {
+  return api.delete("history/clear", { searchParams: { days: String(days) } }).json<HistoryClearPayload>();
+}
+
 export async function fetchSettings() {
   return api.get("settings").json<SettingsPayload>();
 }
@@ -82,11 +106,11 @@ export async function fetchHealth() {
 }
 
 export async function importCookies(payload: CookieImportPayload) {
-  return api.post("settings/cookies", { json: payload }).json<CookieMutationResponse>();
+  return withApiDetail(api.post("settings/cookies", { json: payload }).json<CookieMutationResponse>());
 }
 
 export async function removeCookies(platform: string) {
-  return api.delete(`settings/cookies/${platform}`).json<CookieMutationResponse>();
+  return withApiDetail(api.delete(`settings/cookies/${platform}`).json<CookieMutationResponse>());
 }
 
 export async function updateYtdlp() {

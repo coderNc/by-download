@@ -53,11 +53,50 @@ export function useTaskStream(enabled = true) {
           if (nextStatus !== "completed") {
             autoDownloadedTaskIdsRef.current.delete(payload.task_id);
           }
-          upsertTask({
+          const taskPatch: Parameters<typeof upsertTask>[0] = {
             id: payload.task_id,
             status: nextStatus,
             error_message: typeof payload.error_message === "string" ? payload.error_message : null,
-          });
+          };
+
+          if (typeof payload.title === "string") {
+            taskPatch.title = payload.title;
+          }
+          if (typeof payload.url === "string") {
+            taskPatch.url = payload.url;
+          }
+          if (typeof payload.platform === "string") {
+            taskPatch.platform = payload.platform;
+          }
+          if (typeof payload.file_path === "string") {
+            taskPatch.file_path = payload.file_path;
+          }
+          if (typeof payload.subtitle_path === "string") {
+            taskPatch.subtitle_path = payload.subtitle_path;
+          }
+          if (typeof payload.log_text === "string") {
+            taskPatch.log_text = payload.log_text;
+          }
+          if (typeof payload.created_at === "string") {
+            taskPatch.created_at = payload.created_at;
+          }
+          if (typeof payload.started_at === "string") {
+            taskPatch.started_at = payload.started_at;
+          }
+          if (typeof payload.completed_at === "string") {
+            taskPatch.completed_at = payload.completed_at;
+          }
+          if (typeof payload.progress === "number") {
+            taskPatch.progress = payload.progress;
+          } else if (nextStatus === "completed") {
+            taskPatch.progress = 100;
+          }
+          if (nextStatus === "completed") {
+            taskPatch.speed = null;
+            taskPatch.eta = null;
+          }
+
+          upsertTask(taskPatch);
         }
 
         if (payload.status === "completed") {

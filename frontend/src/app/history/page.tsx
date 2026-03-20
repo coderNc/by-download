@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, CalendarClock, Clock3, HardDrive } from "lucide-react";
+import { toast } from "sonner";
+import { AlertTriangle, CalendarClock, Clock3, HardDrive, Layers3, Sparkles, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { FallbackImage } from "@/components/ui/fallback-image";
 import { GlassCard } from "@/components/ui/glass-card";
 import { useApi } from "@/hooks/use-api";
-import { fetchHistory } from "@/lib/api";
+import { clearHistory, fetchHistory, fetchHistoryStats } from "@/lib/api";
 import { formatBytes, formatDateTime, formatDuration } from "@/lib/format";
 
 function statusClass(status?: string) {
@@ -37,13 +38,19 @@ export default function HistoryPage() {
   const [platformFilter, setPlatformFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
+  const [clearDays, setClearDays] = useState(30);
   const platformLabels = {
     youtube: commonT("platforms.youtube"),
     bilibili: commonT("platforms.bilibili"),
     unknown: commonT("platforms.unknown"),
   };
   const historyQuery = useApi(fetchHistory);
+  const statsQuery = useApi(fetchHistoryStats);
+  const clearMutation = useApi(clearHistory, {
+    onError: (message) => toast.error(message),
+  });
   const { execute } = historyQuery;
+  const { execute: loadStats } = statsQuery;
   const tasks = useMemo(() => historyQuery.data?.tasks ?? [], [historyQuery.data?.tasks]);
   const total = historyQuery.data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -54,19 +61,81 @@ export default function HistoryPage() {
     [],
   );
 
+  const refreshHistory = useCallback(async () => {
+    return execute({
+      page: effectivePage,
+      limit: pageSize,
+      search: query,
+      platform: platformFilter,
+      status: statusFilter,
+    });
+  }, [effectivePage, execute, pageSize, platformFilter, query, statusFilter]);
+
+  const refreshStats = useCallback(async () => {
+    return loadStats(undefined as never);
+  }, [loadStats]);
+
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      void execute({
-        page: effectivePage,
-        limit: pageSize,
-        search: query,
-        platform: platformFilter,
-        status: statusFilter,
-      });
+      void refreshHistory();
     }, 250);
 
     return () => window.clearTimeout(timer);
-  }, [effectivePage, execute, pageSize, platformFilter, query, statusFilter]);
+  }, [refreshHistory]);
+
+  useEffect(() => {
+    void refreshStats();
+  }, [refreshStats]);
+
+  const platformBreakdown = useMemo(
+    () =>
+      Object.entries(statsQuery.data?.platform_breakdown ?? {}).sort((left, right) => right[1] - left[1]),
+    [statsQuery.data?.platform_breakdown],
+  );
+
+  const statsCards = useMemo(
+    () => [
+      {
+        label: t("stats.total_downloads"),
+        value: `${statsQuery.data?.total_downloads ?? 0}`,
+        icon: Layers3,
+      },
+      {
+        label: t("stats.total_size"),
+        value: formatBytes(statsQuery.data?.total_size) ?? t("not_available"),
+        icon: HardDrive,
+      },
+      {
+        label: t("stats.recent_downloads"),
+        value: `${statsQuery.data?.recent_count ?? 0}`,
+        icon: Sparkles,
+      },
+      {
+        label: t("stats.platform_count"),
+        value: `${platformBreakdown.length}`,
+        icon: CalendarClock,
+      },
+    ],
+    [platformBreakdown.length, statsQuery.data?.recent_count, statsQuery.data?.total_downloads, statsQuery.data?.total_size, t],
+  );
+
+  const handleClearHistory = async () => {
+    const normalizedDays = Math.max(1, Math.round(clearDays) || 1);
+    setClearDays(normalizedDays);
+
+    const result = await clearMutation.execute(normalizedDays);
+    if (!result) {
+      return;
+    }
+
+    if (result.removed > 0) {
+      toast.success(t("clear.success", { count: result.removed }));
+    } else {
+      toast.message(t("clear.empty"));
+    }
+
+    await Promise.all([refreshHistory(), refreshStats()]);
+  };
 
   return (
     <div className="space-y-6">
@@ -81,6 +150,73 @@ export default function HistoryPage() {
           </span>
         </div>
       </GlassCard>
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {statsCards.map(({ label, value, icon: Icon }) => (
+          <GlassCard key={label} className="space-y-3" hoverable>
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-sm text-slate-500 dark:text-slate-400">{label}</div>
+              <Icon className="size-4 text-violet-500" />
+            </div>
+            <div className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">{value}</div>
+          </GlassCard>
+        ))}
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+        <GlassCard className="space-y-4" hoverable>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-bold text-slate-950 dark:text-white">{t("breakdown.title")}</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{t("breakdown.subtitle")}</p>
+            </div>
+            <Layers3 className="size-5 text-violet-500" />
+          </div>
+          {platformBreakdown.length === 0 ? (
+            <div className="text-sm text-slate-500 dark:text-slate-400">{t("breakdown.empty")}</div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {platformBreakdown.map(([platform, count]) => (
+                <span
+                  key={platform}
+                  className="inline-flex rounded-full border border-white/40 bg-white/60 px-3 py-1 text-xs font-semibold text-slate-700 dark:border-white/10 dark:bg-white/6 dark:text-slate-200"
+                >
+                  {(platformLabels[platform as keyof typeof platformLabels] ?? platform) + ` · ${count}`}
+                </span>
+              ))}
+            </div>
+          )}
+        </GlassCard>
+
+        <GlassCard className="space-y-4" hoverable>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-bold text-slate-950 dark:text-white">{t("clear.title")}</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{t("clear.subtitle")}</p>
+            </div>
+            <Trash2 className="size-5 text-rose-500" />
+          </div>
+          <label className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
+            <span className="font-medium">{t("clear.input_label")}</span>
+            <input
+              type="number"
+              min={1}
+              value={clearDays}
+              onChange={(event) => setClearDays(Number(event.target.value))}
+              className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm outline-none dark:border-white/10 dark:bg-white/6"
+            />
+          </label>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{t("clear.hint")}</p>
+          <Button
+            variant="outline"
+            className="rounded-full"
+            onClick={() => void handleClearHistory()}
+            disabled={clearMutation.loading}
+          >
+            {clearMutation.loading ? t("clear.running") : t("clear.action")}
+          </Button>
+        </GlassCard>
+      </section>
 
       <GlassCard className="grid gap-3 md:grid-cols-3" hoverable>
         <label className="space-y-1 text-xs text-slate-500 dark:text-slate-400">

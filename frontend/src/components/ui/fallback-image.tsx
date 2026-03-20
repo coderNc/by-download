@@ -1,7 +1,7 @@
 "use client";
 
 import Image, { type ImageProps } from "next/image";
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import { API_BASE_URL } from "@/lib/constants";
 
@@ -40,12 +40,9 @@ function toDisplayImageSrc(src?: string | null) {
 }
 
 export function FallbackImage({ src, alt, fallback, onError, ...props }: FallbackImageProps) {
-  const [failed, setFailed] = useState(false);
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const normalizedSrc = toDisplayImageSrc(src);
-
-  useEffect(() => {
-    setFailed(false);
-  }, [normalizedSrc]);
+  const failed = normalizedSrc !== null && failedSrc === normalizedSrc;
 
   if (!normalizedSrc || failed) {
     return <>{fallback}</>;
@@ -57,7 +54,7 @@ export function FallbackImage({ src, alt, fallback, onError, ...props }: Fallbac
       alt={alt}
       {...props}
       onError={(event) => {
-        setFailed(true);
+        setFailedSrc(normalizedSrc);
         onError?.(event);
       }}
     />

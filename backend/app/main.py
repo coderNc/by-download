@@ -12,6 +12,7 @@ from app.api.settings import router as settings_router
 from app.api.websocket import router as websocket_router
 from app.core.config import settings
 from app.core.download_manager import DownloadManager
+from app.core.history_cleanup import cleanup_completed_tasks
 from app.db.database import init_db
 
 
@@ -22,6 +23,7 @@ async def lifespan(app: FastAPI):
     Path(settings.log_dir).mkdir(parents=True, exist_ok=True)
 
     await init_db()
+    await cleanup_completed_tasks()
     manager = DownloadManager(max_concurrent=settings.max_concurrent_downloads)
     app.state.download_manager = manager
     await manager.recover_interrupted()
