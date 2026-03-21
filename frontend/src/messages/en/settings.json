@@ -40,6 +40,14 @@
   "save_button": "Save Settings",
   "cookies_saved": "Cookies imported successfully",
   "cookies_deleted": "Cookies removed",
+  "cookie_verify": "Verify Online",
+  "cookie_verify_running": "Verifying...",
+  "cookie_verify_result": "Online Verification",
+  "cookie_verify_status": "Live Status",
+  "cookie_verify_message": "Verification Message",
+  "cookie_verify_account": "Detected Account",
+  "cookie_verify_success": "Online verification passed",
+  "cookie_verify_failed": "Online verification failed",
   "update_success": "yt-dlp updated successfully",
   "refresh": "Refresh",
   "import_cookies": "Import Cookies",
@@ -61,6 +69,22 @@
     "expired": "All matched cookies have already expired.",
     "unsupported_platform": "This platform is not supported for cookie import.",
     "read_error": "The saved cookie file could not be read. Re-import it."
+  },
+  "cookie_verify_states": {
+    "valid": "Valid",
+    "invalid": "Invalid"
+  },
+  "cookie_verify_issues": {
+    "none": "Verification passed",
+    "missing": "There is no cookie file available to verify for this platform.",
+    "empty_file": "The cookie file is empty and cannot be verified online.",
+    "parse_error": "The cookie file format is invalid for online verification.",
+    "domain_mismatch": "The cookie does not match the selected platform.",
+    "expired": "The cookie has expired and cannot pass online verification.",
+    "unsupported_platform": "This platform does not support online verification.",
+    "read_error": "The cookie file could not be read.",
+    "login_required": "The platform did not recognize the cookie as logged in.",
+    "network_error": "The verification request failed due to a network error."
   },
   "placeholders": {
     "quality": "best",

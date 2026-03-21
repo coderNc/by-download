@@ -4,6 +4,7 @@ import { API_BASE_URL } from "@/lib/constants";
 import type {
   CookieImportPayload,
   CookieMutationResponse,
+  CookieVerifyPayload,
   CreateDownloadPayload,
   HealthPayload,
   HistoryClearPayload,
@@ -11,6 +12,8 @@ import type {
   HistoryStatsPayload,
   ParsedVideo,
   SettingsPayload,
+  TaskBulkActionPayload,
+  TaskBulkActionResponse,
   TaskItem,
   TaskListResponse,
   YtdlpUpdatePayload,
@@ -113,6 +116,14 @@ export async function removeCookies(platform: string) {
   return withApiDetail(api.delete(`settings/cookies/${platform}`).json<CookieMutationResponse>());
 }
 
+export async function verifyCookies(platform: string) {
+  return withApiDetail(api.post(`settings/cookies/${platform}/verify`).json<CookieVerifyPayload>());
+}
+
 export async function updateYtdlp() {
   return api.post("settings/ytdlp-update").json<YtdlpUpdatePayload>();
+}
+
+export async function bulkUpdateTasks(payload: TaskBulkActionPayload) {
+  return withApiDetail(api.post("tasks/bulk", { json: payload }).json<TaskBulkActionResponse>());
 }

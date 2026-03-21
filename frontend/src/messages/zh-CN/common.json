@@ -50,5 +50,6 @@
     "downloads": "正在下载",
     "history": "历史记录",
     "settings": "设置"
-  }
+  },
+  "queue_summary": "队列 {queued} · 下载中 {active}"
 }

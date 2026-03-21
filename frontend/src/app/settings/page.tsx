@@ -12,8 +12,8 @@ import { useLocale } from "@/hooks/use-locale";
 import { useThemeMode } from "@/hooks/use-theme-mode";
 import { type Locale, type ThemeMode } from "@/lib/constants";
 import { formatDateTime } from "@/lib/format";
-import { fetchHealth, fetchSettings, importCookies, removeCookies, saveSettings, updateYtdlp } from "@/lib/api";
-import type { CookiePlatformStatus, SettingsPayload } from "@/lib/types";
+import { fetchHealth, fetchSettings, importCookies, removeCookies, saveSettings, updateYtdlp, verifyCookies } from "@/lib/api";
+import type { CookiePlatformStatus, CookieVerifyPayload, SettingsPayload } from "@/lib/types";
 import { useSettingsStore } from "@/stores/settings-store";
 
 const FORMAT_OPTIONS = ["mp4", "webm", "mp3"] as const;
@@ -44,6 +44,7 @@ export default function SettingsPage() {
   const fetchSettingsApi = useCallback(() => fetchSettings(), []);
   const fetchHealthApi = useCallback(() => fetchHealth(), []);
   const updateYtdlpApi = useCallback(() => updateYtdlp(), []);
+  const verifyCookiesApi = useCallback((platform: string) => verifyCookies(platform), []);
 
   const settingsQuery = useApi(fetchSettingsApi, { onSuccess: setSettings, onError: (message) => toast.error(message) });
   const saveMutation = useApi(saveSettings, { onSuccess: setSettings, onError: (message) => toast.error(message) });
@@ -54,6 +55,9 @@ export default function SettingsPage() {
   });
   const deleteCookiesMutation = useApi(removeCookies, {
     onSuccess: () => toast.success(t("cookies_deleted")),
+    onError: (message) => toast.error(message),
+  });
+  const verifyCookiesMutation = useApi(verifyCookiesApi, {
     onError: (message) => toast.error(message),
   });
   const ytdlpMutation = useApi(updateYtdlpApi, {
@@ -69,6 +73,7 @@ export default function SettingsPage() {
   const [form, setForm] = useState<Partial<SettingsPayload>>({});
   const [cookiePlatform, setCookiePlatform] = useState<(typeof COOKIE_PLATFORMS)[number]>("bilibili");
   const [cookieContent, setCookieContent] = useState("");
+  const [cookieVerifyResults, setCookieVerifyResults] = useState<Partial<Record<(typeof COOKIE_PLATFORMS)[number], CookieVerifyPayload>>>({});
   const { execute: loadSettings } = settingsQuery;
   const { execute: loadHealth } = healthQuery;
 
@@ -154,7 +159,18 @@ export default function SettingsPage() {
     if (!result) {
       return;
     }
+    setCookieVerifyResults((current) => ({ ...current, [cookiePlatform]: undefined }));
     await refresh();
+  };
+
+  const handleCookieVerify = async () => {
+    const result = await verifyCookiesMutation.execute(cookiePlatform);
+    if (!result) {
+      return;
+    }
+
+    setCookieVerifyResults((current) => ({ ...current, [cookiePlatform]: result }));
+    toast.success(result.verified ? t("cookie_verify_success") : t("cookie_verify_failed"));
   };
 
   const handleYtdlpUpdate = async () => {
@@ -175,10 +191,12 @@ export default function SettingsPage() {
     [settings?.cookie_platforms],
   );
   const selectedCookieStatus = settings?.cookie_platforms?.[cookiePlatform] ?? emptyCookieStatus(cookiePlatform);
+  const selectedCookieVerify = cookieVerifyResults[cookiePlatform];
   const selectedCookieExpiry = selectedCookieStatus.has_session_cookie && !selectedCookieStatus.expires_at
     ? t("cookie_session")
     : formatDateTime(selectedCookieStatus.expires_at) ?? t("cookie_not_available");
   const selectedCookieLastChecked = formatDateTime(selectedCookieStatus.last_checked_at) ?? t("cookie_not_available");
+  const selectedCookieVerifiedAt = formatDateTime(selectedCookieVerify?.checked_at) ?? t("cookie_not_available");
 
   const cookieStatusTone = useCallback((status: string) => {
     if (status === "valid") {
@@ -211,6 +229,28 @@ export default function SettingsPage() {
       } as const;
 
       return t(`cookie_issues.${issueCode in knownCodes ? issueCode : "parse_error"}`);
+    },
+    [t],
+  );
+
+  const cookieVerifyIssueLabel = useCallback(
+    (issueCode?: string | null) => {
+      if (!issueCode) {
+        return t("cookie_verify_issues.none");
+      }
+      const knownCodes = {
+        missing: true,
+        empty_file: true,
+        parse_error: true,
+        domain_mismatch: true,
+        expired: true,
+        unsupported_platform: true,
+        read_error: true,
+        login_required: true,
+        network_error: true,
+      } as const;
+
+      return t(`cookie_verify_issues.${issueCode in knownCodes ? issueCode : "network_error"}`);
     },
     [t],
   );
@@ -453,12 +493,55 @@ export default function SettingsPage() {
               <Button
                 variant="outline"
                 className="rounded-full"
+                onClick={handleCookieVerify}
+                disabled={verifyCookiesMutation.loading || selectedCookieStatus.status !== "valid"}
+              >
+                {verifyCookiesMutation.loading ? t("cookie_verify_running") : t("cookie_verify")}
+              </Button>
+              <Button
+                variant="outline"
+                className="rounded-full"
                 onClick={handleCookieDelete}
                 disabled={deleteCookiesMutation.loading || selectedCookieStatus.status === "missing"}
               >
                 {t("delete_cookies")}
               </Button>
             </div>
+            {selectedCookieVerify ? (
+              <div className="rounded-2xl border border-white/40 bg-white/60 px-4 py-4 text-sm text-slate-700 dark:border-white/10 dark:bg-white/6 dark:text-slate-200">
+                <div className="font-medium text-slate-950 dark:text-white">{t("cookie_verify_result")}</div>
+                <div className="mt-3 grid gap-3 text-xs md:grid-cols-2">
+                  <div>
+                    <div className="text-slate-500 dark:text-slate-400">{t("cookie_verify_status")}</div>
+                    <div className="mt-1 font-medium text-slate-900 dark:text-slate-100">
+                      {selectedCookieVerify.verified ? t("cookie_verify_states.valid") : t("cookie_verify_states.invalid")}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-slate-500 dark:text-slate-400">{t("cookie_last_checked")}</div>
+                    <div className="mt-1 font-medium text-slate-900 dark:text-slate-100">{selectedCookieVerifiedAt}</div>
+                  </div>
+                  <div className="md:col-span-2">
+                    <div className="text-slate-500 dark:text-slate-400">{t("cookie_verify_message")}</div>
+                    <div className="mt-1 font-medium text-slate-900 dark:text-slate-100">{selectedCookieVerify.message}</div>
+                  </div>
+                  {selectedCookieVerify.account_label ? (
+                    <div className="md:col-span-2">
+                      <div className="text-slate-500 dark:text-slate-400">{t("cookie_verify_account")}</div>
+                      <div className="mt-1 font-medium text-slate-900 dark:text-slate-100">{selectedCookieVerify.account_label}</div>
+                    </div>
+                  ) : null}
+                  {!selectedCookieVerify.verified ? (
+                    <div className="md:col-span-2">
+                      <div className="text-slate-500 dark:text-slate-400">{t("cookie_issue_label")}</div>
+                      <div className="mt-1 font-medium text-slate-900 dark:text-slate-100">
+                        {cookieVerifyIssueLabel(selectedCookieVerify.issue_code)}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
           </GlassCard>
 
           <GlassCard className="space-y-5" hoverable>

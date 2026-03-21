@@ -40,6 +40,14 @@
   "save_button": "保存设置",
   "cookies_saved": "Cookie 导入成功",
   "cookies_deleted": "Cookie 已删除",
+  "cookie_verify": "在线验证",
+  "cookie_verify_running": "验证中...",
+  "cookie_verify_result": "在线验证结果",
+  "cookie_verify_status": "在线状态",
+  "cookie_verify_message": "验证说明",
+  "cookie_verify_account": "识别账号",
+  "cookie_verify_success": "在线验证通过",
+  "cookie_verify_failed": "在线验证未通过",
   "update_success": "yt-dlp 更新成功",
   "refresh": "刷新",
   "import_cookies": "导入 Cookie",
@@ -61,6 +69,22 @@
     "expired": "匹配到的 Cookie 已全部过期。",
     "unsupported_platform": "当前平台暂不支持导入 Cookie。",
     "read_error": "Cookie 文件读取失败，请重新导入。"
+  },
+  "cookie_verify_states": {
+    "valid": "可用",
+    "invalid": "不可用"
+  },
+  "cookie_verify_issues": {
+    "none": "验证通过",
+    "missing": "当前平台还没有可验证的 Cookie。",
+    "empty_file": "Cookie 文件为空，无法在线验证。",
+    "parse_error": "Cookie 文件格式异常，无法在线验证。",
+    "domain_mismatch": "Cookie 与当前平台域名不匹配。",
+    "expired": "Cookie 已过期，无法通过在线验证。",
+    "unsupported_platform": "当前平台不支持在线验证。",
+    "read_error": "Cookie 文件读取失败。",
+    "login_required": "平台未识别为登录态。",
+    "network_error": "验证时网络请求失败。"
   },
   "placeholders": {
     "quality": "best",

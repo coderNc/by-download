@@ -50,5 +50,6 @@
     "downloads": "Downloads",
     "history": "History",
     "settings": "Settings"
-  }
+  },
+  "queue_summary": "Queue {queued} · Active {active}"
 }

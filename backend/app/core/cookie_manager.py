@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
+from http.cookiejar import MozillaCookieJar
 from pathlib import Path
 import re
+
+import httpx
 
 from app.core.config import settings
 
@@ -49,6 +53,16 @@ class CookieInspectionResult:
     expires_at: datetime | None
     last_checked_at: datetime
     has_session_cookie: bool
+
+
+@dataclass(slots=True)
+class CookieOnlineVerificationResult:
+    platform: str
+    verified: bool
+    issue_code: str | None
+    message: str
+    checked_at: datetime
+    account_label: str | None = None
 
 
 def _normalize_platform(platform: str) -> str:
@@ -135,12 +149,12 @@ def _domain_matches_platform(domain: str, platform: str) -> bool:
 def _datetime_from_timestamp(value: int | None) -> datetime | None:
     if value is None:
         return None
-    return datetime.utcfromtimestamp(value)
+    return datetime.fromtimestamp(value, UTC)
 
 
 def inspect_cookie_records(platform: str, records: list[CookieRecord]) -> CookieInspectionResult:
     normalized_platform = _normalize_platform(platform)
-    checked_at = datetime.utcnow()
+    checked_at = datetime.now(UTC)
     matching_records = [record for record in records if _domain_matches_platform(record.domain, normalized_platform)]
 
     if not matching_records:
@@ -233,7 +247,7 @@ def inspect_cookie_file(platform: str) -> CookieInspectionResult:
             expired_cookie_count=0,
             domains=[],
             expires_at=None,
-            last_checked_at=datetime.utcnow(),
+            last_checked_at=datetime.now(UTC),
             has_session_cookie=False,
         )
 
@@ -252,7 +266,7 @@ def inspect_cookie_file(platform: str) -> CookieInspectionResult:
             expired_cookie_count=0,
             domains=[],
             expires_at=None,
-            last_checked_at=datetime.utcnow(),
+            last_checked_at=datetime.now(UTC),
             has_session_cookie=False,
         )
     except OSError:
@@ -266,7 +280,7 @@ def inspect_cookie_file(platform: str) -> CookieInspectionResult:
             expired_cookie_count=0,
             domains=[],
             expires_at=None,
-            last_checked_at=datetime.utcnow(),
+            last_checked_at=datetime.now(UTC),
             has_session_cookie=False,
         )
 
@@ -291,3 +305,121 @@ def serialize_cookie_records(records: list[CookieRecord]) -> str:
         )
     lines.append("")
     return "\n".join(lines)
+
+
+def _load_cookie_jar(platform: str) -> MozillaCookieJar:
+    jar = MozillaCookieJar(str(get_cookie_path(platform)))
+    jar.load(ignore_discard=True, ignore_expires=True)
+    return jar
+
+
+async def _verify_bilibili_cookie(platform: str) -> CookieOnlineVerificationResult:
+    jar = await asyncio.to_thread(_load_cookie_jar, platform)
+    checked_at = datetime.now(UTC)
+    headers = {"User-Agent": "Mozilla/5.0 (BY-DOWNLOADER Cookie Verify)"}
+    try:
+        async with httpx.AsyncClient(cookies=jar, headers=headers, timeout=20.0) as client:
+            response = await client.get("https://api.bilibili.com/x/web-interface/nav")
+            response.raise_for_status()
+            payload = response.json()
+    except httpx.HTTPError as exc:
+        return CookieOnlineVerificationResult(
+            platform=platform,
+            verified=False,
+            issue_code="network_error",
+            message=f"Failed to reach Bilibili verification endpoint: {exc}",
+            checked_at=checked_at,
+        )
+
+    data = payload.get("data") or {}
+    if payload.get("code") == 0 and data.get("isLogin"):
+        uname = data.get("uname")
+        return CookieOnlineVerificationResult(
+            platform=platform,
+            verified=True,
+            issue_code=None,
+            message="Bilibili cookie is logged in and available for authenticated downloads",
+            checked_at=checked_at,
+            account_label=str(uname) if uname else None,
+        )
+
+    return CookieOnlineVerificationResult(
+        platform=platform,
+        verified=False,
+        issue_code="login_required",
+        message="Bilibili did not recognize the saved cookie as a logged-in session",
+        checked_at=checked_at,
+    )
+
+
+async def _verify_youtube_cookie(platform: str) -> CookieOnlineVerificationResult:
+    jar = await asyncio.to_thread(_load_cookie_jar, platform)
+    checked_at = datetime.now(UTC)
+    headers = {"User-Agent": "Mozilla/5.0 (BY-DOWNLOADER Cookie Verify)"}
+    try:
+        async with httpx.AsyncClient(
+            cookies=jar,
+            headers=headers,
+            timeout=20.0,
+            follow_redirects=True,
+        ) as client:
+            response = await client.get("https://www.youtube.com/feed/history")
+            response.raise_for_status()
+    except httpx.HTTPError as exc:
+        return CookieOnlineVerificationResult(
+            platform=platform,
+            verified=False,
+            issue_code="network_error",
+            message=f"Failed to reach YouTube verification endpoint: {exc}",
+            checked_at=checked_at,
+        )
+
+    final_url = str(response.url)
+    body = response.text
+    is_logged_in = "ServiceLogin" not in final_url and "accounts.google.com" not in final_url and (
+        '"LOGGED_IN":true' in body
+        or '"LOGGED_IN": true' in body
+        or "History - YouTube" in body
+    )
+    if is_logged_in:
+        return CookieOnlineVerificationResult(
+            platform=platform,
+            verified=True,
+            issue_code=None,
+            message="YouTube cookie appears to be logged in and usable for authenticated downloads",
+            checked_at=checked_at,
+        )
+
+    return CookieOnlineVerificationResult(
+        platform=platform,
+        verified=False,
+        issue_code="login_required",
+        message="YouTube redirected to sign-in, so the saved cookie does not appear to be logged in",
+        checked_at=checked_at,
+    )
+
+
+async def verify_cookie_file_online(platform: str) -> CookieOnlineVerificationResult:
+    normalized_platform = _normalize_platform(platform)
+    inspection = inspect_cookie_file(normalized_platform)
+    if inspection.status != "valid":
+        return CookieOnlineVerificationResult(
+            platform=normalized_platform,
+            verified=False,
+            issue_code=inspection.issue_code or "missing",
+            message="Cookie file is not valid enough for online verification",
+            checked_at=datetime.now(UTC),
+        )
+
+    if normalized_platform == "bilibili":
+        return await _verify_bilibili_cookie(normalized_platform)
+    if normalized_platform == "youtube":
+        return await _verify_youtube_cookie(normalized_platform)
+
+    return CookieOnlineVerificationResult(
+        platform=normalized_platform,
+        verified=False,
+        issue_code="unsupported_platform",
+        message=f"Unsupported cookie platform: {platform}",
+        checked_at=datetime.now(UTC),
+    )

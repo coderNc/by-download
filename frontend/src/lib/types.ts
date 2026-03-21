@@ -145,6 +145,26 @@ export interface CookieMutationResponse {
   platform_status: CookiePlatformStatus;
 }
 
+export interface CookieVerifyPayload {
+  platform: string;
+  verified: boolean;
+  issue_code?: string | null;
+  message: string;
+  checked_at?: string | null;
+  account_label?: string | null;
+}
+
+export interface TaskBulkActionPayload {
+  action: string;
+}
+
+export interface TaskBulkActionResponse {
+  ok: boolean;
+  action: string;
+  affected: number;
+  task_ids: string[];
+}
+
 export interface HistoryClearPayload {
   removed: number;
 }

@@ -13,6 +13,8 @@ from app.db.models import Task
 from app.schemas.task import (
     BatchDownloadRequest,
     DownloadRequest,
+    TaskBulkActionRequest,
+    TaskBulkActionResponse,
     TaskListResponse,
     TaskResponse,
     TaskUpdateRequest,
@@ -26,6 +28,27 @@ def _get_download_manager(request: Request) -> DownloadManager:
     if manager is None:
         raise HTTPException(status_code=503, detail="Download manager not initialized")
     return manager
+
+
+async def _delete_task_record(task: Task) -> None:
+    async with async_session() as session:
+        result = await session.execute(select(Task).where(Task.id == task.id))
+        task_record = result.scalar_one_or_none()
+        if not task_record:
+            return
+        file_path = task_record.file_path
+        subtitle_path = task_record.subtitle_path
+        await session.delete(task_record)
+        await session.commit()
+
+    for candidate in (file_path, subtitle_path):
+        if candidate and os.path.exists(candidate):
+            try:
+                os.remove(candidate)
+            except OSError:
+                pass
+
+
 @router.post("/download", response_model=TaskResponse)
 async def create_download(payload: DownloadRequest, request: Request) -> TaskResponse:
     task_id = str(uuid4())
@@ -133,6 +156,44 @@ async def update_task(task_id: str, payload: TaskUpdateRequest, request: Request
         raise HTTPException(status_code=400, detail=f"Unsupported action: {payload.action}")
 
     return {"ok": True, "task_id": task_id, "action": action}
+
+
+@router.post("/tasks/bulk", response_model=TaskBulkActionResponse)
+async def bulk_update_tasks(payload: TaskBulkActionRequest, request: Request) -> TaskBulkActionResponse:
+    manager = _get_download_manager(request)
+    action = payload.action.strip().lower()
+
+    async with async_session() as session:
+        if action == "pause_all":
+            result = await session.execute(select(Task.id).where(Task.status.in_(["queued", "downloading"])))
+            task_ids = [str(item) for item in result.scalars().all()]
+        elif action == "resume_all":
+            result = await session.execute(select(Task.id).where(Task.status == "paused"))
+            task_ids = [str(item) for item in result.scalars().all()]
+        elif action == "retry_failed":
+            result = await session.execute(select(Task.id).where(Task.status == "failed"))
+            task_ids = [str(item) for item in result.scalars().all()]
+        elif action == "clear_completed":
+            result = await session.execute(select(Task).where(Task.status == "completed"))
+            completed_tasks = result.scalars().all()
+            task_ids = [task.id for task in completed_tasks]
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported bulk action: {payload.action}")
+
+    if action == "pause_all":
+        for task_id in task_ids:
+            await manager.pause_task(task_id)
+    elif action == "resume_all":
+        for task_id in task_ids:
+            await manager.resume_task(task_id)
+    elif action == "retry_failed":
+        for task_id in task_ids:
+            await manager.retry_task(task_id)
+    elif action == "clear_completed":
+        for task in completed_tasks:
+            await _delete_task_record(task)
+
+    return TaskBulkActionResponse(action=action, affected=len(task_ids), task_ids=task_ids)
 
 
 @router.get("/tasks/{task_id}/file")

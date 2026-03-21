@@ -7,6 +7,7 @@ import { Home, Download, History, Settings, Zap } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { LocaleToggle } from "./locale-toggle";
 import { useTranslations } from "next-intl";
+import { useTaskStore } from "@/stores/task-store";
 
 const navItems = [
   { href: "/", icon: Home, label: "nav.home" },
@@ -18,8 +19,10 @@ const navItems = [
 export function TopNav() {
   const pathname = usePathname();
   const t = useTranslations("common");
+  const queueStats = useTaskStore((state) => state.queueStats);
+  const queueTotal = queueStats.queued + queueStats.active;
 
-    return (
+  return (
     <header className="fixed top-6 left-1/2 z-50 w-full max-w-5xl -translate-x-1/2 px-4">
       <nav className="glass flex h-16 items-center gap-3 rounded-full border border-white/20 bg-white/10 px-4 backdrop-blur-lg sm:px-6 dark:border-white/10 dark:bg-black/20">
         <div className="flex min-w-0 shrink-0 items-center gap-2">
@@ -48,12 +51,22 @@ export function TopNav() {
               >
                 <Icon className={cn("h-4 w-4", isActive && "animate-pulse")} />
                 {t(item.label)}
+                {item.href === "/downloads" && queueTotal > 0 ? (
+                  <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-blue-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                    {queueTotal}
+                  </span>
+                ) : null}
               </Link>
             );
           })}
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
+          {queueTotal > 0 ? (
+            <div className="hidden rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-semibold text-zinc-700 md:block dark:border-white/10 dark:text-zinc-200">
+              {t("queue_summary", { queued: queueStats.queued, active: queueStats.active })}
+            </div>
+          ) : null}
           <LocaleToggle />
           <div className="h-4 w-[1px] bg-white/20 dark:bg-white/10" />
           <ThemeToggle />

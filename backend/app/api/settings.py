@@ -9,11 +9,13 @@ from sqlalchemy import select
 from app.core.config import settings
 from app.core.cookie_manager import (
     CookieValidationError,
+    CookieOnlineVerificationResult,
     SUPPORTED_COOKIE_PLATFORMS,
     get_cookie_path,
     inspect_cookie_content,
     inspect_cookie_file,
     serialize_cookie_records,
+    verify_cookie_file_online,
 )
 from app.core.history_cleanup import cleanup_completed_tasks
 from app.core.ytdlp_wrapper import ytdlp_wrapper
@@ -23,6 +25,7 @@ from app.schemas.settings import (
     CookieImportRequest,
     CookieMutationResponse,
     CookiePlatformStatus,
+    CookieVerifyResponse,
     HealthResponse,
     SettingsResponse,
     SettingsUpdateRequest,
@@ -173,6 +176,16 @@ async def delete_cookies(platform: str) -> CookieMutationResponse:
 
     platform_status = CookiePlatformStatus.model_validate(asdict(inspect_cookie_file(normalized)))
     return CookieMutationResponse(status="ok", platform=normalized, platform_status=platform_status)
+
+
+@router.post("/settings/cookies/{platform}/verify", response_model=CookieVerifyResponse)
+async def verify_cookies(platform: str) -> CookieVerifyResponse:
+    normalized = platform.strip().lower()
+    if normalized not in SUPPORTED_COOKIE_PLATFORMS:
+        raise HTTPException(status_code=400, detail=f"Unsupported cookie platform: {platform}")
+
+    result: CookieOnlineVerificationResult = await verify_cookie_file_online(normalized)
+    return CookieVerifyResponse.model_validate(asdict(result))
 
 
 @router.get("/health", response_model=HealthResponse)

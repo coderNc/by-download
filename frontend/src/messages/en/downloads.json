@@ -7,5 +7,37 @@
   "speed_value": "{value} MB/s",
   "speed": "Speed",
   "eta": "ETA",
-  "progress": "Progress"
+  "progress": "Progress",
+  "live_queue": "Live queue: {queued} queued · {active} active",
+  "summary": {
+    "queued": "Queued",
+    "active": "Active",
+    "paused": "Paused",
+    "failed": "Failed",
+    "completed": "Completed"
+  },
+  "bulk": {
+    "title": "Bulk Actions",
+    "subtitle": "Run quick actions on the current download queue.",
+    "pause_all": {
+      "action": "Pause All",
+      "success": "Paused {count} task(s)",
+      "empty": "No tasks can be paused right now"
+    },
+    "resume_all": {
+      "action": "Resume All",
+      "success": "Resumed {count} task(s)",
+      "empty": "No paused tasks right now"
+    },
+    "retry_failed": {
+      "action": "Retry Failed",
+      "success": "Retried {count} failed task(s)",
+      "empty": "No failed tasks right now"
+    },
+    "clear_completed": {
+      "action": "Clear Completed",
+      "success": "Removed {count} completed task(s)",
+      "empty": "No completed tasks right now"
+    }
+  }
 }

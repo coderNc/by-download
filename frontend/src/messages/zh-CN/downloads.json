@@ -7,5 +7,37 @@
   "speed_value": "{value} MB/s",
   "speed": "速度",
   "eta": "剩余时间",
-  "progress": "进度"
+  "progress": "进度",
+  "live_queue": "实时队列：排队 {queued} · 下载中 {active}",
+  "summary": {
+    "queued": "排队中",
+    "active": "下载中",
+    "paused": "已暂停",
+    "failed": "失败",
+    "completed": "已完成"
+  },
+  "bulk": {
+    "title": "批量操作",
+    "subtitle": "对当前下载任务执行快捷管理操作。",
+    "pause_all": {
+      "action": "全部暂停",
+      "success": "已暂停 {count} 个任务",
+      "empty": "当前没有可暂停的任务"
+    },
+    "resume_all": {
+      "action": "全部继续",
+      "success": "已恢复 {count} 个任务",
+      "empty": "当前没有可继续的任务"
+    },
+    "retry_failed": {
+      "action": "重试失败",
+      "success": "已重试 {count} 个失败任务",
+      "empty": "当前没有失败任务"
+    },
+    "clear_completed": {
+      "action": "清理已完成",
+      "success": "已清理 {count} 个已完成任务",
+      "empty": "当前没有已完成任务"
+    }
+  }
 }

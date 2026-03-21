@@ -56,6 +56,15 @@ class CookieMutationResponse(BaseModel):
     platform_status: CookiePlatformStatus
 
 
+class CookieVerifyResponse(BaseModel):
+    platform: str
+    verified: bool = False
+    issue_code: Optional[str] = None
+    message: str = ""
+    checked_at: Optional[datetime] = None
+    account_label: Optional[str] = None
+
+
 class HealthResponse(BaseModel):
     status: str = "ok"
     ytdlp_version: str = ""

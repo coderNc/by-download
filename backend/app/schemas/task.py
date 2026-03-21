@@ -105,3 +105,14 @@ class TaskUpdateRequest(BaseModel):
 class DuplicateCheckResponse(BaseModel):
     is_duplicate: bool
     existing_task: Optional[TaskResponse] = None
+
+
+class TaskBulkActionRequest(BaseModel):
+    action: str
+
+
+class TaskBulkActionResponse(BaseModel):
+    ok: bool = True
+    action: str
+    affected: int = 0
+    task_ids: list[str] = []
