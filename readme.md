@@ -40,6 +40,7 @@
 |   |   |-- db/             # 数据库初始化与模型
 |   |   `-- schemas/        # Pydantic schema
 |   `-- requirements.txt
+|-- desktop/                # Electron 桌面壳层与打包脚本
 |-- frontend/               # Next.js Web 界面
 |   |-- src/app/            # 页面与布局
 |   |-- src/components/     # 组件
@@ -114,6 +115,24 @@ pnpm dev
 
 默认开发地址为 `http://localhost:3000`。
 
+### 方式三：桌面客户端开发
+
+在仓库根目录执行：
+
+```bash
+corepack enable pnpm
+pnpm install
+pip install -r backend/requirements.txt -r backend/requirements-dev.txt
+pnpm dev:desktop
+```
+
+桌面开发模式会：
+
+- 启动本地 Electron 壳层
+- 在 `127.0.0.1:16333` 启动本地 FastAPI
+- 在 `127.0.0.1:16334` 启动本地 Next.js
+- 将数据库、下载目录、Cookies 和日志写入桌面应用的用户数据目录
+
 ## 环境变量
 
 ### 后端
@@ -140,6 +159,14 @@ pnpm dev
 | `NEXT_PUBLIC_API_URL` | `http://localhost:8000/api` | API 基础地址 |
 | `NEXT_PUBLIC_WS_URL` | `ws://localhost:8000/ws/progress` | 任务流 WebSocket 地址 |
 
+### 桌面端固定端口
+
+桌面客户端构建时会将前端 API 固定到本地端口：
+
+- 前端地址：`http://127.0.0.1:16334`
+- 后端 API：`http://127.0.0.1:16333/api`
+- WebSocket：`ws://127.0.0.1:16333/ws/progress`
+
 ## 开发命令
 
 ### 前端
@@ -156,6 +183,73 @@ pnpm lint
 ```bash
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
+
+### 根目录
+
+```bash
+pnpm dev:web
+pnpm dev:backend
+pnpm dev:desktop
+pnpm build:web
+pnpm build:desktop
+pnpm pack:desktop
+pnpm pack:desktop:dir
+pnpm pack:desktop:mac:app
+pnpm pack:desktop:mac:dmg
+pnpm pack:desktop:win:exe
+```
+
+`pnpm build:desktop` 会：
+
+1. 以桌面固定本地端口重新构建前端 standalone
+2. 使用 PyInstaller 打包 FastAPI 后端
+3. 将前后端运行文件整理到 `desktop/.dist/`
+
+`pnpm pack:desktop` 会在此基础上调用 Electron Builder 生成安装包。
+
+明确的桌面打包命令：
+
+- `pnpm pack:desktop:mac:app`：生成 macOS `.app` 目录
+- `pnpm pack:desktop:mac:dmg`：生成 macOS `.dmg`
+- `pnpm pack:desktop:win:exe`：生成 Windows `NSIS .exe` 安装包
+
+说明：
+
+- `pnpm pack:desktop` 默认等价于 `pnpm pack:desktop:mac:dmg`
+- `pnpm pack:desktop:dir` 默认等价于 `pnpm pack:desktop:mac:app`
+- Windows 安装包建议在 Windows 环境或 CI 的 Windows runner 上执行，跨平台构建可能受宿主环境限制
+
+## GitHub Actions
+
+仓库当前包含两类 GitHub Actions：
+
+- `CI`：运行后端测试、前端 lint/build、桌面资源构建
+- `Release`：支持桌面安装包构建与发布
+
+发布流程：
+
+1. 推送形如 `v1.0.0` 的 tag
+2. GitHub Actions 分别在：
+   - `macos-latest` 构建 `BY-DOWNLOADER-*.dmg`
+   - `windows-latest` 构建 `BY-DOWNLOADER Setup *.exe`
+3. workflow 会自动将构建产物上传到对应 GitHub Release
+
+也可以在 Actions 页面手动触发 `Release` workflow：
+
+- 不填 `release_tag`：只执行打包验证，不创建 Release
+- 填写 `release_tag`：会按输入版本创建/更新 Release
+- 可同时控制：
+  - `draft`
+  - `prerelease`
+
+版本同步规则：
+
+- Release workflow 会从 `v1.2.3` 这类 tag 自动提取 `1.2.3`
+- 并在构建前同步写入：
+  - `desktop/package.json`
+  - `frontend/package.json`
+
+这样发布出来的 `.dmg` / `.exe` 文件名和应用内部版本号会与 tag 保持一致。
 
 ## 数据与持久化
 
