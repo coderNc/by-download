@@ -64,6 +64,9 @@ export interface CreateDownloadPayload {
   duration?: number | null;
   format_id?: string;
   format_label?: string | null;
+  format_ext?: string | null;
+  video_codec?: string | null;
+  audio_codec?: string | null;
   quality?: string | null;
   extract_audio?: boolean;
   audio_format?: string;

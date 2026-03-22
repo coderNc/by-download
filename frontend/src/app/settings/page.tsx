@@ -39,8 +39,8 @@ export default function SettingsPage() {
   const t = useTranslations("settings");
   const setSettings = useSettingsStore((state) => state.setSettings);
   const settings = useSettingsStore((state) => state.settings);
-  const { locale, setLocale } = useLocale();
-  const { theme, setTheme, mounted } = useThemeMode();
+  const { locale, setLocale, mounted: localeMounted } = useLocale();
+  const { theme, setTheme, mounted: themeMounted } = useThemeMode();
   const fetchSettingsApi = useCallback(() => fetchSettings(), []);
   const fetchHealthApi = useCallback(() => fetchHealth(), []);
   const updateYtdlpApi = useCallback(() => updateYtdlp(), []);
@@ -182,6 +182,7 @@ export default function SettingsPage() {
   };
 
   const loading = settingsQuery.loading || healthQuery.loading;
+  const appearanceReady = themeMounted && localeMounted;
   const cookieStatuses = useMemo(
     () =>
       COOKIE_PLATFORMS.map((platform) => ({
@@ -571,42 +572,64 @@ export default function SettingsPage() {
             </div>
             <div className="space-y-3">
               <div className="text-sm font-medium text-slate-700 dark:text-slate-300">{t("theme.title")}</div>
-              <div className="grid gap-2 sm:grid-cols-3">
-                {[
-                  { value: "light", label: t("theme.light"), icon: Sun },
-                  { value: "dark", label: t("theme.dark"), icon: Moon },
-                  { value: "system", label: t("theme.system"), icon: Monitor },
-                ].map(({ value, label, icon: Icon }) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setTheme(value as ThemeMode)}
-                    className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm transition ${mounted && theme === value ? "border-violet-400 bg-violet-500 text-white" : "border-slate-200 bg-white/80 text-slate-700 dark:border-white/10 dark:bg-white/6 dark:text-slate-200"}`}
-                  >
-                    <Icon className="size-4" />
-                    {label}
-                  </button>
-                ))}
-              </div>
+              {!appearanceReady ? (
+                <div className="grid gap-2 sm:grid-cols-3">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <div
+                      key={`theme-skeleton-${index}`}
+                      className="h-[50px] rounded-2xl border border-slate-200 bg-white/60 dark:border-white/10 dark:bg-white/6"
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-3">
+                  {[
+                    { value: "light", label: t("theme.light"), icon: Sun },
+                    { value: "dark", label: t("theme.dark"), icon: Moon },
+                    { value: "system", label: t("theme.system"), icon: Monitor },
+                  ].map(({ value, label, icon: Icon }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setTheme(value as ThemeMode)}
+                      className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm transition ${theme === value ? "border-violet-400 bg-violet-500 text-white" : "border-slate-200 bg-white/80 text-slate-700 dark:border-white/10 dark:bg-white/6 dark:text-slate-200"}`}
+                    >
+                      <Icon className="size-4" />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="space-y-3">
               <div className="text-sm font-medium text-slate-700 dark:text-slate-300">{t("locale.title")}</div>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {[
-                  { value: "zh-CN", label: t("locale.zh-CN") },
-                  { value: "en", label: t("locale.en") },
-                ].map(({ value, label }) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setLocale(value as Locale)}
-                    className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm transition ${locale === value ? "border-sky-400 bg-sky-500 text-white" : "border-slate-200 bg-white/80 text-slate-700 dark:border-white/10 dark:bg-white/6 dark:text-slate-200"}`}
-                  >
-                    <Languages className="size-4" />
-                    {label}
-                  </button>
-                ))}
-              </div>
+              {!appearanceReady ? (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {Array.from({ length: 2 }).map((_, index) => (
+                    <div
+                      key={`locale-skeleton-${index}`}
+                      className="h-[50px] rounded-2xl border border-slate-200 bg-white/60 dark:border-white/10 dark:bg-white/6"
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {[
+                    { value: "zh-CN", label: t("locale.zh-CN") },
+                    { value: "en", label: t("locale.en") },
+                  ].map(({ value, label }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setLocale(value as Locale)}
+                      className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm transition ${locale === value ? "border-sky-400 bg-sky-500 text-white" : "border-slate-200 bg-white/80 text-slate-700 dark:border-white/10 dark:bg-white/6 dark:text-slate-200"}`}
+                    >
+                      <Languages className="size-4" />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </GlassCard>
         </div>

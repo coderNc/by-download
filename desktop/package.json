@@ -1,0 +1,66 @@
+{
+  "name": "desktop",
+  "version": "0.1.0",
+  "private": true,
+  "main": "main.cjs",
+  "scripts": {
+    "ensure-electron": "node ./scripts/ensure-electron.mjs",
+    "generate-icon": "node ./scripts/generate-app-icon.mjs",
+    "dev": "pnpm run ensure-electron && pnpm run build:desktop && electron .",
+    "build:desktop": "node ./scripts/build-desktop.mjs",
+    "pack": "pnpm run pack:mac:dmg",
+    "pack:dir": "pnpm run pack:mac:app",
+    "pack:mac:app": "pnpm run ensure-electron && pnpm run generate-icon && pnpm run build:desktop && node ./scripts/run-electron-builder.mjs --mac dir",
+    "pack:mac:dmg": "pnpm run ensure-electron && pnpm run generate-icon && pnpm run build:desktop && node ./scripts/run-electron-builder.mjs --mac dmg",
+    "pack:win:exe": "pnpm run ensure-electron && pnpm run generate-icon && pnpm run build:desktop && node ./scripts/run-electron-builder.mjs --win nsis --x64"
+  },
+  "devDependencies": {
+    "electron": "^37.2.1",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.bydownloader.desktop",
+    "productName": "BY-DOWNLOADER",
+    "directories": {
+      "output": "dist-installers",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.cjs",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": ".dist/frontend",
+        "to": "frontend"
+      },
+      {
+        "from": ".dist/backend",
+        "to": "backend"
+      }
+    ],
+    "electronDist": ".build/electron-cache",
+    "mac": {
+      "icon": "build/icon.icns",
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.utilities"
+    },
+    "dmg": {
+      "icon": "build/icon.icns"
+    },
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        "nsis"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Utility"
+    }
+  }
+}

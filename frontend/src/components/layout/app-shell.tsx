@@ -3,19 +3,12 @@
 import React from "react";
 
 import { TopNav } from "@/components/layout/top-nav";
-import { useThemeMode } from "@/hooks/use-theme-mode";
 
 interface AppShellProps {
   children: React.ReactNode;
 }
 
 export function AppShell({ children }: AppShellProps) {
-  const { mounted } = useThemeMode();
-
-  if (!mounted) {
-    return null;
-  }
-
   return (
     <div className="relative min-h-screen w-full overflow-x-hidden bg-background font-sans transition-colors duration-500">
       <div className="fixed -left-24 -top-24 h-96 w-96 rounded-full bg-violet-500/12 blur-3xl" />

@@ -49,6 +49,9 @@ class DownloadRequest(BaseModel):
     duration: Optional[int] = None
     format_id: Optional[str] = None
     format_label: Optional[str] = None
+    format_ext: Optional[str] = None
+    video_codec: Optional[str] = None
+    audio_codec: Optional[str] = None
     quality: Optional[str] = "best"
     extract_audio: bool = False
     audio_format: Optional[str] = "mp3"

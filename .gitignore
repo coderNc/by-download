@@ -15,6 +15,9 @@ node_modules/
 .next/
 out/
 build/
+.build/
+.dist/
+dist-installers/
 .pnp
 .pnp.*
 .yarn/*
@@ -46,6 +49,19 @@ backend/data/
 backend/downloads/
 backend/cookies/
 backend/logs/
+
+# Desktop packaging
+desktop/.build/
+desktop/.dist/
+desktop/dist-installers/
+desktop/*.tgz
+!desktop/build/
+!desktop/build/icon.svg
+desktop/build/icon-1024.png
+desktop/build/icon.icns
+desktop/build/icon.ico
+desktop/build/icon.iconset/
+desktop/.DS_Store
 
 # IDE
 .idea/

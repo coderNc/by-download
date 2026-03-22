@@ -117,12 +117,63 @@ export default function Home() {
 
   const getVideoFormats = useCallback((video: ParsedVideo) => video.formats.filter((item) => !item.is_audio_only), []);
 
+  const getCompatibilityScore = useCallback((format: VideoFormat) => {
+    const ext = (format.ext || "").toLowerCase();
+    const codec = (format.vcodec || "").toLowerCase();
+
+    if (ext === "mp4") {
+      if (codec.includes("avc") || codec.includes("h264")) {
+        return 100;
+      }
+      if (codec.includes("hev") || codec.includes("hvc") || codec.includes("h265")) {
+        return 70;
+      }
+      if (codec.includes("vp9") || codec.includes("vp09")) {
+        return 20;
+      }
+      if (codec.includes("av01") || codec.includes("av1")) {
+        return 10;
+      }
+      return 50;
+    }
+
+    return 0;
+  }, []);
+
+  const sortFormatsByPreference = useCallback(
+    (formats: VideoFormat[]) =>
+      [...formats].sort((left, right) => {
+        const compatibilityGap = getCompatibilityScore(right) - getCompatibilityScore(left);
+        if (compatibilityGap !== 0) {
+          return compatibilityGap;
+        }
+
+        const leftHeight = Number.parseInt(left.resolution?.replace(/[^0-9]/g, "") || "0", 10);
+        const rightHeight = Number.parseInt(right.resolution?.replace(/[^0-9]/g, "") || "0", 10);
+        if (rightHeight !== leftHeight) {
+          return rightHeight - leftHeight;
+        }
+
+        const rightSize = right.filesize ?? right.filesize_approx ?? 0;
+        const leftSize = left.filesize ?? left.filesize_approx ?? 0;
+        return rightSize - leftSize;
+      }),
+    [getCompatibilityScore],
+  );
+
   const getDefaultVideoFormat = useCallback(
     (video: ParsedVideo) => {
       const videoFormats = getVideoFormats(video);
-      return videoFormats.find((item) => item.ext === preferredFormat) ?? videoFormats[0] ?? video.formats[0];
+      const preferredFormats = videoFormats.filter((item) => item.ext === preferredFormat);
+      const rankedPreferredFormats = sortFormatsByPreference(preferredFormats);
+      if (rankedPreferredFormats[0]) {
+        return rankedPreferredFormats[0];
+      }
+
+      const rankedVideoFormats = sortFormatsByPreference(videoFormats);
+      return rankedVideoFormats[0] ?? video.formats[0];
     },
-    [getVideoFormats, preferredFormat],
+    [getVideoFormats, preferredFormat, sortFormatsByPreference],
   );
 
   const getFormatForStrategy = useCallback(
@@ -171,6 +222,9 @@ export default function Home() {
         duration: video.duration,
         format_id: resolvedFormat?.format_id,
         format_label: audioOnly ? "MP3 audio" : resolvedFormat?.label,
+        format_ext: resolvedFormat?.ext,
+        video_codec: resolvedFormat?.vcodec,
+        audio_codec: resolvedFormat?.acodec,
         quality: settings?.default_quality ?? "best",
         extract_audio: audioOnly,
         audio_format: audioOnly ? "mp3" : undefined,

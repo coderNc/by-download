@@ -116,20 +116,70 @@ class YtdlpWrapper:
                 resolution = f"{height}p"
         vcodec = fmt.get("vcodec")
         acodec = fmt.get("acodec")
+        video_codec_label = cls._humanize_video_codec(vcodec)
+        audio_codec_label = cls._humanize_audio_codec(acodec)
         is_audio_only = vcodec in (None, "none") and acodec not in (None, "none")
         if is_audio_only:
             abr = fmt.get("abr")
             bitrate = f" {int(abr)}kbps" if abr else ""
             size = cls._format_filesize(fmt.get("filesize") or fmt.get("filesize_approx"))
             size_text = f" ({size})" if size else ""
-            return f"{ext} Audio{bitrate}{size_text}".strip()
+            codec_text = f" {audio_codec_label}" if audio_codec_label else ""
+            return f"{ext} Audio{codec_text}{bitrate}{size_text}".strip()
         is_video_only = vcodec not in (None, "none") and acodec in (None, "none")
         scope = "Video" if is_video_only else ""
         size = cls._format_filesize(fmt.get("filesize") or fmt.get("filesize_approx"))
         size_text = f" ({size})" if size else ""
         middle = f" {resolution}" if resolution else ""
         suffix = f" {scope}" if scope else ""
-        return f"{ext}{middle}{suffix}{size_text}".strip()
+        codec_parts = [part for part in [video_codec_label, audio_codec_label if not is_video_only else None] if part]
+        codec_text = f" {'/'.join(codec_parts)}" if codec_parts else ""
+        return f"{ext}{middle}{codec_text}{suffix}{size_text}".strip()
+
+    @staticmethod
+    def _humanize_video_codec(value: Any) -> str:
+        codec = str(value or "").lower()
+        if not codec or codec == "none":
+            return ""
+        if "av01" in codec or codec == "av1":
+            return "AV1"
+        if "vp09" in codec or codec == "vp9":
+            return "VP9"
+        if "avc" in codec or "h264" in codec:
+            return "AVC/H.264"
+        if "hev" in codec or "hvc" in codec or "h265" in codec:
+            return "HEVC/H.265"
+        return codec.split(".")[0].upper()
+
+    @staticmethod
+    def _humanize_audio_codec(value: Any) -> str:
+        codec = str(value or "").lower()
+        if not codec or codec == "none":
+            return ""
+        if "mp4a" in codec or "aac" in codec:
+            return "AAC"
+        if "opus" in codec:
+            return "Opus"
+        if "vorbis" in codec:
+            return "Vorbis"
+        if "mp3" in codec:
+            return "MP3"
+        return codec.split(".")[0].upper()
+
+    @staticmethod
+    def _preferred_audio_selector(format_ext: str | None) -> tuple[str, str | None]:
+        normalized_ext = (format_ext or "").strip().lower()
+        if normalized_ext == "mp4":
+            return (
+                "bestaudio[ext=m4a]/bestaudio[acodec*=mp4a]/bestaudio[acodec*=aac]/bestaudio",
+                "mp4",
+            )
+        if normalized_ext == "webm":
+            return (
+                "bestaudio[ext=webm]/bestaudio[acodec*=opus]/bestaudio",
+                "webm",
+            )
+        return ("bestaudio/best", None)
 
     @staticmethod
     def _collect_subtitles(info: dict[str, Any]) -> dict[str, str]:
@@ -293,6 +343,9 @@ class YtdlpWrapper:
         task_id: str,
         url: str,
         format_id: str | None = None,
+        format_ext: str | None = None,
+        video_codec: str | None = None,
+        audio_codec: str | None = None,
         quality: str | None = "best",
         extract_audio: bool = False,
         audio_format: str | None = "mp3",
@@ -316,7 +369,8 @@ class YtdlpWrapper:
         if extract_audio:
             ydl_format = "bestaudio/best"
         elif format_id:
-            ydl_format = f"{format_id}+bestaudio/{format_id}"
+            preferred_audio_selector, merge_output_format = self._preferred_audio_selector(format_ext)
+            ydl_format = f"{format_id}+{preferred_audio_selector}/{format_id}"
         elif quality and quality != "best":
             ydl_format = quality
 
@@ -330,6 +384,11 @@ class YtdlpWrapper:
 
         if ydl_format:
             opts["format"] = ydl_format
+
+        if not extract_audio and format_id:
+            _, merge_output_format = self._preferred_audio_selector(format_ext)
+            if merge_output_format:
+                opts["merge_output_format"] = merge_output_format
 
         if extract_audio:
             opts["postprocessors"] = [

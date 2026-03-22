@@ -1,16 +1,19 @@
 "use client";
 
-import { DEFAULT_LOCALE } from "@/lib/constants";
-import { useLocaleStore } from "@/stores/locale-store";
 import { Button } from "@/components/ui/button";
+import { useLocale } from "@/hooks/use-locale";
 import { Languages } from "lucide-react";
 
 export function LocaleToggle() {
-  const { locale, setLocale } = useLocaleStore();
+  const { locale, setLocale, mounted } = useLocale();
 
   const toggleLocale = () => {
     setLocale(locale === "zh-CN" ? "en" : "zh-CN");
   };
+
+  if (!mounted) {
+    return <div className="h-7 w-16" />;
+  }
 
   return (
     <Button
@@ -20,7 +23,7 @@ export function LocaleToggle() {
       onClick={toggleLocale}
     >
       <Languages className="h-4 w-4" />
-      <span className="uppercase">{(locale || DEFAULT_LOCALE).split("-")[0]}</span>
+      <span className="uppercase">{locale.split("-")[0]}</span>
     </Button>
   );
 }

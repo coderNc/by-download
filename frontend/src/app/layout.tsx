@@ -42,7 +42,7 @@ export default async function RootLayout({
   return (
     <html lang={locale} suppressHydrationWarning>
       <body className="antialiased">
-        <AppProviders>
+        <AppProviders initialLocale={locale}>
           <AppShell>{children}</AppShell>
         </AppProviders>
       </body>

@@ -1,0 +1,28 @@
+{
+  "name": "by-downloader",
+  "private": true,
+  "scripts": {
+    "dev:web": "pnpm --dir frontend dev",
+    "dev:backend": "cd backend && ../.venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload",
+    "dev:desktop": "pnpm --dir desktop dev",
+    "build:web": "pnpm --dir frontend build",
+    "lint:web": "pnpm --dir frontend lint",
+    "build:desktop": "pnpm --dir desktop build:desktop",
+    "pack:desktop": "pnpm --dir desktop run pack",
+    "pack:desktop:dir": "pnpm --dir desktop run pack:dir",
+    "pack:desktop:mac:app": "pnpm --dir desktop run pack:mac:app",
+    "pack:desktop:mac:dmg": "pnpm --dir desktop run pack:mac:dmg",
+    "pack:desktop:win:exe": "pnpm --dir desktop run pack:win:exe"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@parcel/watcher",
+      "@swc/core",
+      "electron",
+      "electron-winstaller",
+      "msw",
+      "sharp",
+      "unrs-resolver"
+    ]
+  }
+}
