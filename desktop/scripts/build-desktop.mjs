@@ -23,10 +23,21 @@ function pythonExecutable() {
   if (process.env.PYTHON_EXECUTABLE) {
     return process.env.PYTHON_EXECUTABLE;
   }
-  if (process.platform === "win32") {
-    return path.join(rootDir, ".venv", "Scripts", "python.exe");
+  const localCandidates =
+    process.platform === "win32"
+      ? [path.join(rootDir, ".venv", "Scripts", "python.exe")]
+      : [
+          path.join(rootDir, ".venv", "bin", "python"),
+          path.join(rootDir, ".venv", "bin", "python3"),
+        ];
+
+  for (const candidate of localCandidates) {
+    if (existsSync(candidate)) {
+      return candidate;
+    }
   }
-  return path.join(rootDir, ".venv", "bin", "python");
+
+  return process.platform === "win32" ? "python" : "python3";
 }
 
 function pnpmCommand() {
