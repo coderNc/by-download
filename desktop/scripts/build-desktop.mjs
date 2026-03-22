@@ -205,11 +205,12 @@ async function populateServerNodeModules(frontendBaseDir, frontendServerRoot) {
 
 function run(command, args, options = {}) {
   return new Promise((resolve, reject) => {
+    const useShell = process.platform === "win32" && (command.endsWith(".cmd") || command.endsWith(".bat"));
     const child = spawn(command, args, {
       cwd: options.cwd ?? rootDir,
       env: { ...process.env, ...(options.env ?? {}) },
       stdio: "inherit",
-      shell: false,
+      shell: useShell,
     });
     child.on("exit", (code) => {
       if (code === 0) {

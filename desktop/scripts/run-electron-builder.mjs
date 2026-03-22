@@ -19,15 +19,16 @@ delete env.npm_package_config_electron_mirror;
 // Keep builder helper downloads on the official binaries release unless the user explicitly overrides it.
 env.ELECTRON_BUILDER_BINARIES_MIRROR =
   env.ELECTRON_BUILDER_BINARIES_MIRROR ||
-  "https://github.com/electron-userland/electron-builder-binaries/releases/download/";
+  "https://repo.huaweicloud.com/repository/toolkit/electron-builder-binaries/";
 
 const command = process.platform === "win32" ? "electron-builder.cmd" : "electron-builder";
+const useShell = process.platform === "win32" && (command.endsWith(".cmd") || command.endsWith(".bat"));
 
 const child = spawn(command, args, {
   cwd: desktopDir,
   env,
   stdio: "inherit",
-  shell: false,
+  shell: useShell,
 });
 
 child.on("exit", (code) => {
